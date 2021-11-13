@@ -31,11 +31,18 @@ capybara.default_driver = "selenium"
 capybara.default_max_wait_time = 5
 
 def test_google():
+    """
+    - Complicated setup to set custom firefox path
+    - pretty much the original seleinum api. Nice!
+    - lots of warnings
+    """
+    
     visit("https://google.com")
     click_button('Ich stimme zu')
     fill_in(title='Suche', value='Selenium')
     # sadly doesn't return the found object, so no chaining
     # .send_keys(Keys.RETURN)
+    # looks more like a bug than intention
     
     # There are two buttons, though technically only one of them should be visible
     click_button('Google Suche', match='first')
@@ -44,9 +51,3 @@ def test_google():
     assert has_selector('.g', text='Selenium automates browsers')
     
     capybara.reset_sessions()
-
-observations = """
-- Complicated setup to set custom firefox path
-- pretty much the original seleinum api. Nice!
-- lots of warnings
-"""

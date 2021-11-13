@@ -20,6 +20,12 @@ def browser():
         browser.quit()
 
 def test_google(browser):
+    """
+    - nicely short
+    - searching is low level
+    - no explicit waiting. Nice!
+    """
+    
     browser.visit('https://google.com')
     browser.find_by_text("Ich stimme zu").click()
     
@@ -28,9 +34,3 @@ def test_google(browser):
     
     assert len(browser.find_by_css('.g')) >= 10
     assert browser.is_text_present("Selenium automates browsers")
-
-observations = """
-- nicely short
-- searching is low level
-- no explicit waiting. Nice!
-"""

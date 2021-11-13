@@ -9,7 +9,7 @@ from firefox import find_firefox
 import pytest
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @pytest.fixture
 def browser():
@@ -21,6 +21,12 @@ def browser():
     browser.quit()
 
 def test_google(browser):
+    """
+    - can auto wait
+    - increadibly basic selector support, no support for compound stuff (class + text) out of the box
+    - quite verbose…
+    """
+    
     browser.get('http://google.com/')
     assert 'Google' in browser.title
     
@@ -32,9 +38,3 @@ def test_google(browser):
     
     first = browser.find_element(By.CSS_SELECTOR, '.g') # first, note missing 's'
     assert 'Selenium automates browsers' in first.text
-
-observations = """
-- can auto wait
-- increadibly basic selector support, no support for compound stuff (class + text) out of the box
-- quite verbose…
-"""

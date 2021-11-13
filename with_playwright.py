@@ -16,6 +16,13 @@ def page():
         browser.close()
 
 def test_google(page):
+    """
+    - Quite low level
+    - Explicit waiting. Ugh
+    - Self-Downloads browsers, nicely self contained
+    - Not based on Selenium / Webdriver
+    """
+    
     page.goto('https://google.com/')
     page.click('text=Ich stimme zu')
     page.fill('css=[title=Suche]', 'Playwright')  # does not give focus!
@@ -24,10 +31,3 @@ def test_google(page):
     assert len(page.query_selector_all('.g')) >= 10
     content = page.text_content('css=.g:first-child')
     assert 'Playwright enables reliable end-to-end testing for modern web apps' in content
-
-observations = """
-- Quite low level
-- Explicit waiting. Ugh
-- Self-Downloads browsers, nicely self contained
-- Not based on Selenium / Webdriver
-"""

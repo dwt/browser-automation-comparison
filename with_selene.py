@@ -28,19 +28,17 @@ def browser():
     yield browser
 
 def test_google(browser):
+    """
+    - lots of warnings raised?
+    - fluid api looks nice
+    - in active development
+    - fluid inline assertions. Nice!
+    """
+    
     browser.open('https://google.com/')
-    
     browser.element(by.text('Ich stimme zu')).click()
-    
     browser.element(by.css('[title=Suche]')).should(be.blank) \
         .type('selenium').press_enter()
     
     browser.all('.g').should(have.size_greater_than_or_equal(10)) \
         .first.should(have.text('Selenium automates browsers'))
-
-observations = """
-- lots of warnings raised?
-- fluid api looks nice
-- in active development
-- fluid inline assertions. Nice!
-"""

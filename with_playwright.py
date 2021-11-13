@@ -5,10 +5,13 @@ from playwright.sync_api import sync_playwright
 
 import pytest
 
+HEADLESS = True
+# HEADLESS = False
+
 @pytest.fixture
 def page():
     with sync_playwright() as playwright:
-        browser = playwright.firefox.launch(headless=False)
+        browser = playwright.firefox.launch(headless=HEADLESS)
         yield browser.new_page()
         browser.close()
 

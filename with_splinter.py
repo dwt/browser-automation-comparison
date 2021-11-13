@@ -6,10 +6,14 @@ from firefox import find_firefox
 
 import pytest
 
+HEADLESS = True
+# HEADLESS = False
+
 @pytest.fixture
 def browser():
     options = Options()
     options.binary = find_firefox()
+    options.headless = HEADLESS
 
     with Browser('firefox', options=options) as browser:
         yield browser

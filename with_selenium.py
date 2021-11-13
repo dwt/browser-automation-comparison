@@ -8,9 +8,14 @@ from firefox import find_firefox
 
 import pytest
 
+HEADLESS = True
+# HEADLESS = False
+
 @pytest.fixture
 def browser():
-    browser = webdriver.Firefox(firefox_binary=find_firefox())
+    options = webdriver.firefox.options.Options()
+    options.headless = HEADLESS
+    browser = webdriver.Firefox(options=options, firefox_binary=find_firefox())
     browser.implicitly_wait(10)
     yield browser
     browser.quit()

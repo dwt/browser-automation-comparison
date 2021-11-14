@@ -31,7 +31,7 @@ def test_google(page):
     page.fill('css=[title=Suche]', 'Playwright')  # does not give focus!
     page.click('css=[value="Google Suche"]:visible')  # Not automatically choosing visible elment
     page.wait_for_load_state("networkidle")  # wtf is this neccessary?
-    assert len(page.query_selector_all('.g')) >= 10
+    assert len(page.query_selector_all('.g')) >= 9
     content = page.text_content('css=.g:first-child')
     assert 'Playwright enables reliable end-to-end testing for modern web apps' in content
 
@@ -51,7 +51,7 @@ def test_fill_form(page, flask_uri):
     """
     page.goto(flask_uri + '/form')
     page.fill('text=First name', 'Martin')
-    page.fill('text=Last name', 'Häcker')w
+    page.fill('text=Last name', 'Häcker')
     page.fill('[placeholder="your@email"]', 'foo@bar.org')
     
     # text=First name doesn't work as it selects the label instead

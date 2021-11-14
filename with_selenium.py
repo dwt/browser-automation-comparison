@@ -73,3 +73,24 @@ def test_nested_select_with_retry(browser, flask_uri):
         (By.XPATH, './/*[@id="inner"][contains(text(), "fnord")]')
     ))
     assert 'fnord' in inner.text
+
+def by_label(label_text):
+    # could use xpath library from capybara
+    return (By.XPATH, 
+        f'//input[@id = //label[contains(string(.), "{label_text}")]/@for]'
+        f' | //label[contains(string(.), "{label_text}")]//input'
+    )
+
+def test_fill_form(browser, flask_uri):
+    """
+    - Locating elements by their label is... hard.
+    - Can be done with xpath of course, but at that point I'm actually rebuilding capybaras
+    """
+    browser.get(flask_uri + '/form')
+    browser.find_element(*by_label("First name")).send_keys('Martin')
+    browser.find_element(*by_label("Last name")).send_keys('Häcker')
+    browser.find_element(By.CSS_SELECTOR, '[placeholder="your@email"]').send_keys('foo@bar.org')
+    
+    assert 'Martin' == browser.find_element_by_id('first_name').get_attribute('value')
+    assert 'Häcker' == browser.find_element_by_id('last_name').get_attribute('value')
+    assert 'foo@bar.org' == browser.find_element_by_id('email').get_attribute('value')

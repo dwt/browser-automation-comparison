@@ -47,3 +47,23 @@ def test_nested_select_with_retry(browser, flask_uri):
     browser.is_text_present('fnord')
     inner = browser.find_by_css('#outer').find_by_css('#inner')
     assert 'fnord' in inner.text
+
+def by_label(label_text):
+    # could use xpath library from capybara
+    return (
+        f'//input[@id = //label[contains(string(.), "{label_text}")]/@for]'
+        f' | //label[contains(string(.), "{label_text}")]//input'
+    )
+
+def test_fill_form(browser, flask_uri):
+    """
+    - no native way to find by label
+    """
+    browser.visit(flask_uri + '/form')
+    browser.find_by_xpath(by_label('First name')).fill('Martin')
+    browser.find_by_xpath(by_label('Last name')).fill('Häcker')
+    browser.find_by_css('[placeholder="your@email"]').fill('foo@bar.org')
+    
+    assert 'Martin' == browser.find_by_css('#first_name').value
+    assert 'Häcker' == browser.find_by_css('#last_name').value
+    assert 'foo@bar.org' == browser.find_by_css('#email').value

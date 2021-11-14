@@ -61,3 +61,16 @@ def test_nested_select_with_retry(flask_uri):
     click_on('Trigger')  # Don't care wether it's a link or button
     inner = find('#outer').find('#inner', text='fnord')
     assert 'fnord' in inner.text
+
+def test_fill_form(flask_uri):
+    """
+    - as does searching by label or placeholder
+    """
+    visit(flask_uri + '/form')
+    fill_in('First name', value='Martin')
+    fill_in('Last name', value='Häcker')
+    fill_in('your@email', value='foo@bar.org')
+    
+    assert 'Martin' == find_field('First name').value
+    assert 'Häcker' == find_field('Last name').value
+    assert 'foo@bar.org' == find_field('your@email').value

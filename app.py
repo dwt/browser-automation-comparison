@@ -22,3 +22,13 @@ def dynamic_disclosure():
     }
     </script>
     '''
+
+@app.route('/form')
+def form():
+    return '''
+    <form>
+        <label for=first_name>First name:</label><input id=first_name>
+        <label>Last name:<input id=last_name></label>
+        <input id=email placeholder=your@email>
+    </form>
+    '''

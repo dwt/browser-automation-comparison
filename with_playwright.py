@@ -1,12 +1,15 @@
 # https://github.com/Microsoft/playwright-python
 # Does not seem to use selenium? Does not seem to use Webdriver, uses special Browser-Builds instead?
+# Does seem to have access to almost all browser behaviour, even stuff that is hard with selenium
+# like downloads, file choosers
+# Can record video of test run
 
 from playwright.sync_api import sync_playwright
 
 import pytest
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @pytest.fixture
 def page():
@@ -40,3 +43,18 @@ def test_nested_select_with_retry(page, flask_uri):
     page.click('text=Trigger')
     inner = page.wait_for_selector('css=#outer >> css=#inner:has-text("fnord")')
     assert 'fnord' in inner.text_content()
+
+def test_fill_form(page, flask_uri):
+    """
+    - placeholder not supported for text selector - why?
+    - input_value behaves differently with text= selector engine
+    """
+    page.goto(flask_uri + '/form')
+    page.fill('text=First name', 'Martin')
+    page.fill('text=Last name', 'Häcker')w
+    page.fill('[placeholder="your@email"]', 'foo@bar.org')
+    
+    # text=First name doesn't work as it selects the label instead
+    assert 'Martin' == page.input_value('#first_name')
+    assert 'Häcker' == page.input_value('#last_name')
+    assert 'foo@bar.org' == page.input_value('#email')

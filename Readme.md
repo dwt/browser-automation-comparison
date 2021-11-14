@@ -9,3 +9,4 @@
 - How to assert information in the page
 - How to send return to textfields to trigger form submit handlers
 - How to deal with autowaiting? Page did load, js / updating pages, especially with compound search terms (within x, within y, find z)
+- Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input

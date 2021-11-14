@@ -31,3 +31,12 @@ def test_google(page):
     assert len(page.query_selector_all('.g')) >= 10
     content = page.text_content('css=.g:first-child')
     assert 'Playwright enables reliable end-to-end testing for modern web apps' in content
+
+def test_nested_select_with_retry(page, flask_uri):
+    """
+    - complex assertionss are possible, but quite cumbersome through complex css or xpath
+    """
+    page.goto(flask_uri + '/dynamic_disclose')
+    page.click('text=Trigger')
+    inner = page.wait_for_selector('css=#outer >> css=#inner:has-text("fnord")')
+    assert 'fnord' in inner.text_content()

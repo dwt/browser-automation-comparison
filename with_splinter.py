@@ -7,7 +7,7 @@ from firefox import find_firefox
 import pytest
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @pytest.fixture
 def browser():
@@ -34,3 +34,16 @@ def test_google(browser):
     
     assert len(browser.find_by_css('.g')) >= 10
     assert browser.is_text_present("Selenium automates browsers")
+
+def test_nested_select_with_retry(browser, flask_uri):
+    """
+    - can do nested searches
+    - but not mixed with matchers, those can only be done on browser
+    - There seems to be no API suppport to express complex matchers (i.e. this class AND that text)
+    - Of course can write them as xpath if I really need to...
+    """
+    browser.visit(flask_uri + '/dynamic_disclose')
+    browser.find_by_text("Trigger").click()
+    browser.is_text_present('fnord')
+    inner = browser.find_by_css('#outer').find_by_css('#inner')
+    assert 'fnord' in inner.text

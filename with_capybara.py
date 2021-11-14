@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from firefox import find_firefox
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @capybara.register_driver("selenium")
 def init_selenium_driver(app):
@@ -51,3 +51,13 @@ def test_google():
     assert has_selector('.g', text='Selenium automates browsers')
     
     capybara.reset_sessions()
+
+def test_nested_select_with_retry(flask_uri):
+    """
+    - nested searching just works. Ah the joy.
+    - expressive find() is a joy to use
+    """
+    visit(flask_uri + '/dynamic_disclose')
+    click_on('Trigger')  # Don't care wether it's a link or button
+    inner = find('#outer').find('#inner', text='fnord')
+    assert 'fnord' in inner.text

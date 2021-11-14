@@ -3,7 +3,7 @@ from flask import Flask
 app = Flask(__name__)
 
 @app.route("/dynamic_disclose")
-def hello_world():
+def dynamic_disclosure():
     return '''
     <div id=container>
         <div id=outer>

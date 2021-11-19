@@ -2,7 +2,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-@app.route("/dynamic_disclose")
+@app.get("/dynamic_disclose")
 def dynamic_disclosure():
     return '''
     <div id=container>
@@ -23,7 +23,7 @@ def dynamic_disclosure():
     </script>
     '''
 
-@app.route('/form')
+@app.get('/form')
 def form():
     return '''
     <form>

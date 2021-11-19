@@ -7,7 +7,7 @@ from firefox import find_firefox
 import pytest
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 @pytest.fixture
 def browser():
@@ -67,3 +67,27 @@ def test_fill_form(browser, flask_uri):
     assert 'Martin' == browser.find_by_css('#first_name').value
     assert 'Häcker' == browser.find_by_css('#last_name').value
     assert 'foo@bar.org' == browser.find_by_css('#email').value
+
+def locate_by_js(browser, element, js):
+    "Provides the element under the name 'element' to js"
+    unwrapped_element = browser.execute_script('const element = arguments[0];' + js, element._element)
+    
+    from splinter.driver.webdriver import WebDriverElement
+    return WebDriverElement(unwrapped_element, element)
+
+def test_fallback_to_selenium_and_js(browser, flask_uri):
+    """
+    - not easy to find elements by js
+    """
+    browser.visit(flask_uri + '/form')
+    element = browser.find_by_xpath(by_label('First name')).first
+    
+    selenium_element = element._element
+    from selenium.webdriver.remote.webelement import WebElement
+    assert isinstance(selenium_element, WebElement)
+    
+    selenium_element.send_keys('fnord')
+    assert element.value == 'fnord'
+    
+    assert browser.evaluate_script('1+1') == 2
+    assert locate_by_js(browser, element, 'return element.parentElement').tag_name == 'form'

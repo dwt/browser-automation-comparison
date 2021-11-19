@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from firefox import find_firefox
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 @capybara.register_driver("selenium")
 def init_selenium_driver(app):
@@ -74,3 +74,21 @@ def test_fill_form(flask_uri):
     assert 'Martin' == find_field('First name').value
     assert 'Häcker' == find_field('Last name').value
     assert 'foo@bar.org' == find_field('your@email').value
+
+def test_fallback_to_selenium_and_js(flask_uri):
+    """
+    - simple escaping to selenium
+    - simple access to the selected dom node from js
+    - wraps returned dom nodes into the native element
+    """
+    visit(flask_uri + '/form')
+    element = find_field('First name')
+    
+    from selenium.webdriver.remote.webelement import WebElement
+    assert isinstance(element.native, WebElement)
+    
+    element.native.send_keys('fnord')
+    assert element.value == 'fnord'
+    
+    # Can even return the correct wrapper element for dom references!
+    assert element.evaluate_script('this.parentElement').tag_name == 'form'

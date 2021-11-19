@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 import pytest
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 @pytest.fixture
 def page():
@@ -58,3 +58,20 @@ def test_fill_form(page, flask_uri):
     assert 'Martin' == page.input_value('#first_name')
     assert 'Häcker' == page.input_value('#last_name')
     assert 'foo@bar.org' == page.input_value('#email')
+
+def test_fallback_to_selenium_and_js(page, flask_uri):
+    """
+    - What does escaping even mean here? Is there a lower level?
+    """
+    
+    page.goto(flask_uri + '/form')
+    element = page.query_selector('text=First name')
+    
+    assert element.evaluate('1+1') == 2
+    
+    # hard to get the current tag name
+    assert element.evaluate('e => e.tagName') == 'LABEL'
+    assert element.get_property('tagName').json_value() == 'LABEL'
+    
+    # js element selection is possible, but complicated
+    assert element.evaluate_handle('e => e.parentElement').get_property('tagName').json_value() == 'FORM'

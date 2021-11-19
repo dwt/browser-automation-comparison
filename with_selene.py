@@ -10,7 +10,7 @@ from selenium.webdriver import Firefox
 import pytest
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 @pytest.fixture
 def browser():
@@ -71,3 +71,34 @@ def test_fill_form(browser, flask_uri):
     assert 'Martin' == browser.element(by.css('#first_name')).get(query.attribute('value'))
     assert 'Häcker' == browser.element(by.css('#last_name')).get(query.attribute('value'))
     assert 'foo@bar.org' == browser.element(by.css('#email')).get(query.attribute('value'))
+
+def locate_by_js(element, js):
+    "Provides the element under the name 'element' to js"
+    unwrapped_element = element.execute_script('const element = arguments[0];' + js)
+    from selenium.webdriver.remote.webelement import WebElement
+    assert isinstance(unwrapped_element, WebElement)
+    
+    from selene.core.entity import Element, Locator
+    return Element(Locator(f'{element}.execute_script()', lambda: unwrapped_element), element.config)
+
+def test_fallback_to_selenium_and_js(browser, flask_uri):
+    """
+    - accessing the underlying selenium element is easy
+    - locating via js is not really supported
+    """
+    browser.open(flask_uri + '/form')
+    element = browser.element(by_label('First name'))
+    
+    from selenium.webdriver.remote.webelement import WebElement
+    assert isinstance(element(), WebElement)
+    
+    element().send_keys('fnord')
+    assert element.get(query.attribute('value')) == 'fnord'
+    
+    # Can even return the correct wrapper element for dom references!
+    assert element.execute_script('return 1+1') == 2
+    
+    # selection via js is possible, but needs manual re-wrapping in selene
+    parent = locate_by_js(element, 'return element.parentElement')
+    assert parent.tag_name == 'form'
+    

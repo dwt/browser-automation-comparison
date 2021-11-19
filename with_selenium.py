@@ -12,7 +12,7 @@ from firefox import find_firefox
 import pytest
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 WAIT = 2
 
@@ -94,3 +94,12 @@ def test_fill_form(browser, flask_uri):
     assert 'Martin' == browser.find_element_by_id('first_name').get_attribute('value')
     assert 'Häcker' == browser.find_element_by_id('last_name').get_attribute('value')
     assert 'foo@bar.org' == browser.find_element_by_id('email').get_attribute('value')
+
+def test_fallback_to_selenium_and_js(browser, flask_uri):
+    """
+    - selection by js is possible but cumbersome
+    """
+    browser.get(flask_uri + '/form')
+    element = browser.find_element(*by_label("First name"))
+    parent_element = browser.execute_script('return arguments[0].parentElement', element)
+    assert parent_element.tag_name == 'form'

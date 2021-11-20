@@ -15,10 +15,8 @@ def flask_uri():
                 
         flask_url = match.group(1)
         
-        # FIXME when tests are killed, sometimes it takes longer to actually kill flask in the background
-        # Can be so long that the next startup fails because the port is not free
         def kill():
-            process.kill()
+            process.terminate()
             process.wait()
         
         atexit.register(kill)

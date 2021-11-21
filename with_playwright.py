@@ -10,6 +10,8 @@ from playwright.sync_api import sync_playwright
 
 import pytest
 
+from conftest import assert_is_png
+
 HEADLESS = True
 # HEADLESS = False
 
@@ -121,3 +123,67 @@ def test_select_by_different_criteria(page, flask_uri, xpath):
     
     # xpath library integration works
     assert_field('xpath=' + xpath.field('input_label'))
+
+def test_debugging_support(page, flask_uri, tmp_path):
+    """
+    - getting the html of a selection is not intuitive
+    - screenshots, even of parts of page!
+    - video of the test. Very nice!
+    - har file of the test execution. Very nice!
+    - tracing API that contains screenshots of every step of the test execution, 
+      a har file and a full playwright trace. And it can be opened in a playwright viewer! Oh my.
+    """
+    page.goto(flask_uri + '/selector_playground')
+    field = page.query_selector('input')
+    
+    # get html of page
+    assert '<label for' in page.content()
+    # get html of a selection
+    assert field.get_property('outerHTML').json_value().startswith('<input id=')
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot.png'
+    page.screenshot(path=path)
+    assert_is_png(path)
+    # get screenshot of part of page
+    path = tmp_path / 'partial_screenshot.png'
+    field.screenshot(path=path)
+    assert_is_png(path)
+    
+    # get video and hars of test
+    browser = page.context.browser
+    video_dir = tmp_path / 'videos'
+    har_path = tmp_path / 'recorded.har'
+    trace_path = tmp_path / 'trace.zip'
+    context = browser.new_context(record_video_dir=video_dir, record_har_path=har_path)
+    context.tracing.start(screenshots=True, snapshots=True)
+    page = context.new_page()
+    page.goto(flask_uri + '/selector_playground')
+    page.fill('text=input_label', 'fnord')
+    context.tracing.stop(path=trace_path)
+    context.close() # save video and har files
+    
+    # video plays
+    video_paths = list(video_dir.iterdir())
+    assert len(video_paths) == 1
+    video_path = video_paths[0]
+    assert video_path.suffix == '.webm'
+    assert video_path.stat().st_size > 1000
+    import subprocess
+    output = subprocess.check_output(['file', video_path])
+    assert b'.webm: WebM' in output
+    
+    # har
+    assert har_path.exists() and har_path.is_file()
+    assert har_path.stat().st_size > 1000
+    output = subprocess.check_output(['file', har_path])
+    assert b'/recorded.har: JSON data' in output
+    
+    # trace
+    assert trace_path.exists() and trace_path.is_file()
+    assert trace_path.suffix == '.zip'
+    assert trace_path.stat().st_size > 1000
+    output = subprocess.check_output(['file', trace_path])
+    assert b'/trace.zip: Zip archive data' in output
+    # Trace contains har file, screenshots of every step 
+    # and a full trace of playwright commands sent to the browser

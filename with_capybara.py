@@ -7,6 +7,7 @@ from capybara.dsl import *
 from selenium.webdriver.common.keys import Keys
 
 from firefox import find_firefox
+from conftest import assert_is_png
 
 HEADLESS = True
 # HEADLESS = False
@@ -127,3 +128,23 @@ def test_select_by_different_criteria(flask_uri):
     
     # Complex criteria
     assert_field(id_='input_id', label='input_label', placeholder='input_placeholder')
+
+def test_debugging_support(flask_uri, tmp_path):
+    """
+    - not very much special debugging support
+    - getting at the html for a selection is not intuitive
+    - capybara doesn't seem to expose a way to differentiate between html attributes and js properties
+    """
+    visit(flask_uri + '/selector_playground')
+    field = find_field('input_name')
+    
+    # get html of page
+    assert '<label for' in page.html
+    # get html of a selection
+    assert field['outerHTML'].startswith('<input id=')
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot.png'
+    page.save_screenshot(path)
+    assert_is_png(path)
+

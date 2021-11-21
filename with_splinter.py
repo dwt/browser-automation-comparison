@@ -1,8 +1,11 @@
 # https://github.com/cobrateam/splinter/
 
+from pathlib import Path
+
 from selenium.webdriver.firefox.options import Options
 from splinter import Browser
 from firefox import find_firefox
+from conftest import assert_is_png
 
 import pytest
 
@@ -118,3 +121,26 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     
     # xpath selector libraries easy to use
     assert_field(browser.find_by_xpath(xpath.field('input_label')))
+
+def test_debugging_support(browser, flask_uri, tmp_path):
+    """
+    - nothing special, nothign unexpected
+    - also doesn't seem to make a distinction between html attributes and js properties
+    """
+    browser.visit(flask_uri + '/selector_playground')
+    
+    # get html of page
+    assert '<label for' in browser.html
+    # get html of a selection
+    field = browser.find_by_xpath('//input')
+    assert field['outerHTML'].startswith('<input id=')
+    
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot'
+    # strangely splinter expects a 'filename' to which it then appends some random stuff
+    # Other APIs either allow you to set an explicit path, or create the whole path randomly
+    actual_path = browser.screenshot(path.as_posix())
+    assert_is_png(Path(actual_path))
+    
+    

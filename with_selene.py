@@ -2,6 +2,7 @@
 
 from selene import by, be, have, query
 from firefox import find_firefox
+from conftest import assert_is_png
 
 from selenium.webdriver.firefox.options import Options
 
@@ -125,3 +126,24 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     assert_field(by.css('[id="input_id"][placeholder="input_placeholder"]'))
     
     assert_field(by.xpath(xpath.field('input_label')))
+
+def test_debugging_support(browser, flask_uri, tmp_path):
+    """
+    - basic support, nothing surprising
+    - nice that it has outer_html in it's api
+    """
+    browser.open(flask_uri + '/selector_playground')
+    field = browser.element(by.css('input'))
+    
+    # get html of page
+    assert '<label for' in browser.element('html').get(query.outer_html)
+    # there is also browser.save_page_source(path)
+    
+    # get html of a selection
+    assert field.get(query.outer_html).startswith('<input id=')
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot.png'
+    browser.save_screenshot(path.as_posix()) # doesn't accept pathlib paths!
+    assert_is_png(path)
+    # can generate filenames and has browser.last_screenshot() to get that path later

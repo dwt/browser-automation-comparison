@@ -39,3 +39,12 @@ def xpath():
             return callable
     
     return XPath()
+
+
+def assert_is_png(path):
+    assert path.exists() and path.is_file()
+    assert path.stat().st_size > 1000
+    import subprocess
+    output = subprocess.check_output(['file', path])
+    assert b'PNG image data' in output
+    assert b'8-bit/color RGBA, non-interlaced' in output

@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 from firefox import find_firefox
+from conftest import assert_is_png
 
 import pytest
 
@@ -131,3 +132,26 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     
     # can integrate xpath libraries
     assert_field(By.XPATH, xpath.field('input_label'))
+
+def test_debugging_support(browser, flask_uri, tmp_path):
+    """
+    - nothing special, nothign unexpected
+    """
+    browser.get(flask_uri + '/selector_playground')
+    
+    # get html of page
+    assert '<label for' in browser.page_source
+    # get html of a selection
+    field = browser.find_element(By.XPATH, '//input')
+    assert field.get_attribute('outerHTML').startswith('<input id=')
+    
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot.png'
+    browser.save_screenshot(path.as_posix())
+    assert_is_png(path)
+    
+    # getting at browser logs used to be an enableable capability
+    # and then browser.get_log('browser'). But that was lost in the transition to webdriver
+    # One can still somewhat get logs by instructing firefox to put them into the geckodriver.log
+    # but...

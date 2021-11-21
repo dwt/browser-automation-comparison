@@ -91,3 +91,30 @@ def test_fallback_to_selenium_and_js(browser, flask_uri):
     
     assert browser.evaluate_script('1+1') == 2
     assert locate_by_js(browser, element, 'return element.parentElement').tag_name == 'form'
+
+def test_select_by_different_criteria(browser, flask_uri, xpath):
+    """
+    - api support is _very_ basic.
+    - xpath library integration works. At leas there is that
+    """
+    browser.visit(flask_uri + '/selector_playground')
+    
+    def assert_field(element):
+        assert element.value == 'input_value'
+    
+    assert_field(browser.find_by_css('.input_class'))
+    assert_field(browser.find_by_xpath('//*[@placeholder="input_placeholder"]'))
+    assert_field(browser.find_by_name('input_name'))
+    assert_field(browser.find_by_tag('input'))
+    assert_field(browser.find_by_value('input_value'))
+    assert_field(browser.find_by_id('input_id'))
+    # find_by_text not applicable
+    
+    # Aria - no special support
+    
+    # Complex criteria - no support, possible via css and xpath
+    assert_field(browser.find_by_css('[placeholder=input_placeholder][name=input_name]'))
+    assert_field(browser.find_by_xpath('//*[@placeholder="input_placeholder"][@name="input_name"]'))
+    
+    # xpath selector libraries easy to use
+    assert_field(browser.find_by_xpath(xpath.field('input_label')))

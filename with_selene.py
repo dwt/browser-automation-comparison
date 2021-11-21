@@ -101,4 +101,27 @@ def test_fallback_to_selenium_and_js(browser, flask_uri):
     # selection via js is possible, but needs manual re-wrapping in selene
     parent = locate_by_js(element, 'return element.parentElement')
     assert parent.tag_name == 'form'
+
+def test_select_by_different_criteria(browser, flask_uri, xpath):
+    """
+    - Selection is rather limited if you don't want to fall back to css / xpath constantly
+    - at least this allows integrating selection libraries like xpath.py
+    """
+    browser.open(flask_uri + '/selector_playground')
     
+    def assert_field(*args, **kwargs):
+        browser.element(*args, **kwargs).should(have.attribute('id', 'input_id'))
+    
+    assert_field(by.css('[title=input_title'))
+    assert_field(by.id('input_id'))
+    assert_field(by.name('input_name'))
+    assert_field(by.xpath('//*[@placeholder="input_placeholder"]'))
+    # by.link_text, by.partial_link_text, by.partial_text, by.text not applicable
+    
+    # no special support for Aria
+    
+    # Complex criteria, no special support, can be approximated by concatenating xpath or css conditions
+    assert_field(by.xpath('//*[@id="input_id"][@placeholder="input_placeholder"]'))
+    assert_field(by.css('[id="input_id"][placeholder="input_placeholder"]'))
+    
+    assert_field(by.xpath(xpath.field('input_label')))

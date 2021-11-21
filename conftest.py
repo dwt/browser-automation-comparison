@@ -24,6 +24,18 @@ def flask_uri():
         yield flask_url
         
         kill()
-        
+
+# Selenium style xpath matcher
+@pytest.fixture
+def xpath():
+    class XPath:
+        def __getattr__(self, name):
+            from xpath import html
+            from xpath.renderer import to_xpath
+            
+            def callable(*args, **kwargs):
+                return to_xpath(getattr(html, name)(*args, **kwargs))
+            
+            return callable
     
-    
+    return XPath()

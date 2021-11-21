@@ -1,5 +1,7 @@
 # https://github.com/elliterate/capybara.py
 
+import re
+
 import capybara
 from capybara.dsl import *
 from selenium.webdriver.common.keys import Keys
@@ -92,3 +94,36 @@ def test_fallback_to_selenium_and_js(flask_uri):
     
     # Can even return the correct wrapper element for dom references!
     assert element.evaluate_script('this.parentElement').tag_name == 'form'
+
+def test_select_by_different_criteria(flask_uri):
+    """
+    - Just a joy to select stuff - every imaginable way just works
+    """
+    visit(flask_uri + '/selector_playground')
+    
+    def assert_field(*args, **kwargs):
+        assert find_field(*args, **kwargs).value == 'input_value'
+    
+    # simple criterias
+    assert_field('input_name')
+    assert_field(name='input_name')
+    assert_field(title='input_title')
+    assert_field('input_placeholder')
+    assert_field(placeholder='input_placeholder')
+    assert_field('input_label')
+    assert_field(label='input_label')
+    assert_field(label=re.compile('input_.abel')) # actually, regexes are supported on most (all?) kwargs
+    assert_field(value='input_value')
+    
+    assert_field(id_='input_id')
+    assert_field(class_='input_class')
+    assert_field(css='#input_id')
+    assert_field(xpath='//[@class=input_class]')
+    
+    # Aria
+    capybara.enable_aria_label = True
+    assert_field('input_aria_label')
+    assert_field(aria_label='input_aria_label')
+    
+    # Complex criteria
+    assert_field(id_='input_id', label='input_label', placeholder='input_placeholder')

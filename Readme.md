@@ -39,6 +39,10 @@ Current means late 2021, thats when I last looked intensively at this.
 - Plain Selenium (if selenium based)
 - JS, can it access a framework selection?
 
+### What different ways does the framework support to select stuff on the page
+
+- What conveniences are provided besides plain css and xpath?
+
 ## Comparison criteria
 
 - How to select UI elements by id, css, xpath, title, placeholder, label

@@ -10,7 +10,14 @@ Current means late 2021, thats when I last looked intensively at this.
 - [Splinter](https://github.com/cobrateam/splinter/) (Selenium based )
 - [Playwright-python](https://github.com/Microsoft/playwright-python)
 
-## Use cases covered
+## How to execute the tests
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    pytest with_*
+
+## Use cases cosvered
 
 ### Simple google search
 
@@ -34,8 +41,6 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Comparison criteria
 
-- How simple is it to get going
-- How to switch between headless / gui visible
 - How to select UI elements by id, css, xpath, title, placeholder, label
     - Especially if I don't care what exactly it is (button/ link), textfield/input/ custom?
 - How to express complex search queries (class + text, multiple classes)
@@ -59,7 +64,14 @@ Current means late 2021, thats when I last looked intensively at this.
   - Try to interact with hidden / invisible elements
   - Try to interact with element behind another element
 - touch intereaction
+- hover
+- help() and repr() output, how helpfull is it?
+- how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
+- how to access the html of a portion of the page for debugging
 
 ## Further work
 
 - What would be interesting to see? Send pull requestss
+- Try out playwrigth record mode
+- selene supposedly can download it's own drivers, how does that work?
+- how does execution in containers work? How to debug failing tests?

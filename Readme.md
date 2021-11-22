@@ -39,6 +39,12 @@ Current means late 2021, thats when I last looked intensively at this.
 1. What different ways does the framework support to select stuff on the page
     - What conveniences are provided besides plain css and xpath?
 
+1. What debugging support do the frameworks offer?
+    - get html
+    - get screenshots
+    - get videos
+    - get har (http archive) or other logs
+
 
 ## Comparison criteria
 

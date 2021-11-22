@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright
 
 import pytest
 
-from conftest import assert_is_png
+from conftest import assert_is_png, assert_is_file
 
 HEADLESS = True
 # HEADLESS = False
@@ -150,7 +150,7 @@ def test_debugging_support(page, flask_uri, tmp_path):
     field.screenshot(path=path)
     assert_is_png(path)
     
-    # get video and hars of test
+    # get video, har and trace of test
     browser = page.context.browser
     video_dir = tmp_path / 'videos'
     har_path = tmp_path / 'recorded.har'
@@ -167,23 +167,13 @@ def test_debugging_support(page, flask_uri, tmp_path):
     video_paths = list(video_dir.iterdir())
     assert len(video_paths) == 1
     video_path = video_paths[0]
-    assert video_path.suffix == '.webm'
-    assert video_path.stat().st_size > 1000
-    import subprocess
-    output = subprocess.check_output(['file', video_path])
-    assert b'.webm: WebM' in output
+    assert_is_file(video_path, '.webm', b'.webm: WebM')
     
     # har
-    assert har_path.exists() and har_path.is_file()
-    assert har_path.stat().st_size > 1000
-    output = subprocess.check_output(['file', har_path])
-    assert b'/recorded.har: JSON data' in output
+    assert_is_file(har_path, '.har', b'/recorded.har: JSON data')
     
     # trace
-    assert trace_path.exists() and trace_path.is_file()
-    assert trace_path.suffix == '.zip'
-    assert trace_path.stat().st_size > 1000
-    output = subprocess.check_output(['file', trace_path])
-    assert b'/trace.zip: Zip archive data' in output
+    assert_is_file(trace_path, '.zip', b'/trace.zip: Zip archive data')
     # Trace contains har file, screenshots of every step 
-    # and a full trace of playwright commands sent to the browser
+    # and a full trace of playwright commands sent to the browser.
+    # Wooot!

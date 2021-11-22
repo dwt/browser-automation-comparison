@@ -42,9 +42,15 @@ def xpath():
 
 
 def assert_is_png(path):
+    assert_is_file(path, '.png', b'PNG image data', b'8-bit/color RGBA, non-interlaced')
+
+def assert_is_file(path, expected_suffix, *expected_file_outputs):
     assert path.exists() and path.is_file()
     assert path.stat().st_size > 1000
+    assert path.suffix == expected_suffix
+    
     import subprocess
     output = subprocess.check_output(['file', path])
-    assert b'PNG image data' in output
-    assert b'8-bit/color RGBA, non-interlaced' in output
+    for expected_output in expected_file_outputs:
+        assert expected_output in output
+

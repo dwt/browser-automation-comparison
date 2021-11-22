@@ -85,6 +85,11 @@ def test_fallback_to_selenium_and_js(flask_uri):
     - wraps returned dom nodes into the native element
     """
     visit(flask_uri + '/form')
+    
+    browser = page.driver.browser
+    from selenium import webdriver
+    assert isinstance(browser, webdriver.Firefox)
+    
     element = find_field('First name')
     
     from selenium.webdriver.remote.webelement import WebElement

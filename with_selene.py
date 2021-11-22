@@ -88,6 +88,11 @@ def test_fallback_to_selenium_and_js(browser, flask_uri):
     - locating via js is not really supported
     """
     browser.open(flask_uri + '/form')
+    
+    selenium_browser = browser.config.driver
+    from selenium import webdriver
+    assert isinstance(selenium_browser, webdriver.Firefox)
+
     element = browser.element(by_label('First name'))
     
     from selenium.webdriver.remote.webelement import WebElement

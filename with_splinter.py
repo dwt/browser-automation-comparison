@@ -83,6 +83,10 @@ def test_fallback_to_selenium_and_js(browser, flask_uri):
     - not easy to find elements by js
     """
     browser.visit(flask_uri + '/form')
+    
+    from selenium import webdriver
+    assert isinstance(browser.driver, webdriver.Firefox)
+
     element = browser.find_by_xpath(by_label('First name')).first
     
     selenium_element = element._element

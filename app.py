@@ -1,6 +1,10 @@
-from flask import Flask
+import flask
 
-app = Flask(__name__)
+app = flask.Flask(__name__)
+
+@app.get('/')
+def index():
+    return flask.redirect('/selector_playground')
 
 @app.get("/dynamic_disclose")
 def dynamic_disclosure():

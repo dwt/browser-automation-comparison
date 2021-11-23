@@ -68,6 +68,7 @@ Current means late 2021, thats when I last looked intensively at this.
 - how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
 - how to access the html of a portion of the page for debugging
 - how to handle the difference between an html attribute and a js property
+- can private browsing mode be accessed?
 
 ## Further work
 

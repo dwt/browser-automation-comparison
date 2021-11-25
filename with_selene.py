@@ -139,13 +139,13 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     - nice that it has outer_html in it's api
     """
     browser.open(flask_uri + '/selector_playground')
-    field = browser.element(by.css('input'))
     
     # get html of page
-    assert '<label for' in browser.element('html').get(query.outer_html)
+    assert '<label for' in browser.get(query.page_source)
     # there is also browser.save_page_source(path)
     
     # get html of a selection
+    field = browser.element(by.css('input'))
     assert field.get(query.outer_html).startswith('<input id=')
     
     # get screenshot of page

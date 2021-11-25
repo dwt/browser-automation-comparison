@@ -26,7 +26,11 @@ def init_selenium_driver(app):
     
     from capybara.selenium.driver import Driver
     
-    return Driver(app, browser="firefox", options=options, desired_capabilities=capabilities)
+    return Driver(app, browser="firefox", options=options, desired_capabilities=capabilities,
+        # cannot set these after the fact, so we set them here
+        clear_local_storage=True,
+        clear_session_storage=True,
+    )
 
 
 capybara.default_driver = "selenium"
@@ -152,3 +156,64 @@ def test_debugging_support(flask_uri, tmp_path):
     page.save_screenshot(path)
     assert_is_png(path)
 
+
+def test_isolation(flask_uri, ask_to_leave_script):
+    """
+    - easy fast reset between tests, that resets pretty much everything that normal web applications use
+    - cookies, localStorage, sessionStorage (though *Storage only if configured)
+    - can deal with unload events that display a dialog (even though Firefox webdriver doesn't show them)
+    """
+    page.visit(flask_uri)
+    
+    # set cookie
+    # Capybara has no api to deal with cookies -> fallback to selenium
+    page.driver.browser.add_cookie(dict(
+        name='test_cookie', value='test_value'
+    ))
+    cookies = page.driver.browser.get_cookies()
+    assert len(cookies) == 1
+    assert cookies[0]['name'] == 'test_cookie'
+    assert page.driver.browser.get_cookie('test_cookie')['value'] == 'test_value'
+
+    # write local storage
+    page.evaluate_script("window.localStorage.setItem('test_key', 'test_value_localstorage')")
+    assert page.evaluate_script("window.localStorage.getItem('test_key')") == 'test_value_localstorage'
+    
+    # write session storage
+    page.evaluate_script("window.sessionStorage.setItem('test_key', 'test_value')")
+    assert page.evaluate_script("window.sessionStorage.getItem('test_key')") == 'test_value'
+    
+    # open tab / window
+    # here the capybara api reads a bit strange. It talks about windows, but actually means tabs, and there seems to be no way to actually open a new window
+    original_window = page.current_window
+    assert len(page.windows) == 1
+    new_window = page.open_new_window()  # actually opens a new tab
+    assert len(page.windows) == 2
+    assert original_window != new_window
+    
+    # open alert
+    with page.window(new_window):
+        page.evaluate_script("alert('alert_message')")
+    
+    # delay unload
+    with page.window(page.open_new_window()):
+        page.visit(flask_uri)
+        page.execute_script(ask_to_leave_script)
+    
+    # reset() is where the magic happens
+    # only reset local- and sessionStorage if configured in Driver()
+    with assert_no_slower_than(1):
+        page.reset()
+    
+    # windows gone - no delay!
+    assert len(page.windows) == 1
+    assert page.current_url == 'about:blank'
+    
+    page.visit(flask_uri)
+    
+    # cookies gone
+    assert len(page.driver.browser.get_cookies()) == 0
+    
+    # local storage gone
+    assert page.evaluate_script("window.localStorage.length") == 0
+    assert page.evaluate_script("window.sessionStorage.length") == 0

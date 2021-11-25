@@ -1,25 +1,26 @@
 # https://github.com/Microsoft/playwright-python
-# Does not seem to use selenium? Does not seem to use Webdriver, uses special Browser-Builds instead?
-# Does seem to have access to almost all browser behaviour, even stuff that is hard with selenium
+# Does not use selenium. Does not seem to use Webdriver, uses special Browser-Builds instead.
+# Does have access to almost all browser behaviour, even stuff that is hard to do with selenium
 # - like downloads, file choosers
 # - Can record video of test run
 # - can control ajax requests
 
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import PdfMargins, sync_playwright
 
 import pytest
 
-from conftest import assert_is_png, assert_is_file
+from conftest import assert_is_png, assert_is_file, assert_no_slower_than
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @pytest.fixture
 def page():
     with sync_playwright() as playwright:
         browser = playwright.firefox.launch(headless=HEADLESS)
-        page = browser.new_page()
+        context = browser.new_context()
+        page = context.new_page()
         page.set_default_timeout(5000)
         yield page
         browser.close()
@@ -177,3 +178,78 @@ def test_debugging_support(page, flask_uri, tmp_path):
     # Trace contains har file, screenshots of every step 
     # and a full trace of playwright commands sent to the browser.
     # Wooot!
+
+def test_isolation(page, flask_uri, ask_to_leave_script):
+    """
+    - test isolation is achieved at the context level
+    - each test is supposed to get a new context, but share the browser (so that's what I'm emulating here)
+        https://playwright.dev/python/docs/browser-contexts
+    """
+    page.goto(flask_uri)
+    
+    # set cookie
+    # Capybara has no api to deal with cookies -> fallback to selenium
+    page.context.add_cookies([dict(
+        name='test_cookie', value='test_value', url=flask_uri,
+    )])
+    
+    cookies = page.context.cookies()
+    assert len(cookies) == 1
+    assert cookies[0]['name'] == 'test_cookie'
+
+    # write local storage
+    page.evaluate("window.localStorage.setItem('test_key', 'test_value_localstorage')")
+    assert page.evaluate("window.localStorage.getItem('test_key')") == 'test_value_localstorage'
+    
+    # write session storage
+    page.evaluate("window.sessionStorage.setItem('test_key', 'test_value')")
+    assert page.evaluate("window.sessionStorage.getItem('test_key')") == 'test_value'
+    
+    # open tab / window
+    context = page.context
+    assert len(context.pages) == 1
+    new_page = context.new_page()  # actually opens a new tab
+    assert len(context.pages) == 2
+    assert page != new_page
+    
+    # open alert
+    new_page.goto(flask_uri)
+    # playwright actually doesn't like oepn alerts and auto closes them automatically
+    # if that is not wanted, a handler has to be added with page.on('dialog')
+    # This way it does stay open
+    new_page.evaluate("setTimeout(\"alert('alert_message')\", 0)")
+    
+    # delay unload
+    third_page = context.new_page()
+    third_page.goto(flask_uri)
+    third_page.evaluate(ask_to_leave_script)
+    
+    # beforeunload handlers need to be explicitly triggered
+    # but I can't get them to run. :-(
+    def handle_dialog(dialog):
+        assert dialog.type == 'beforeunload'
+        dialog.dismiss()
+
+    third_page.on('dialog', handle_dialog)
+    third_page.close(run_before_unload=True)
+    
+    # This is the big reset
+    # quite fast!
+    with assert_no_slower_than(1):
+        browser = page.context.browser
+        context.close()
+        context = browser.new_context()
+        page = context.new_page()
+    
+    # windows gone - no delay!
+    assert len(context.pages) == 1
+    assert page.url == 'about:blank'
+    
+    page.goto(flask_uri)
+    
+    # cookies gone
+    assert len(context.cookies()) == 0
+    
+    # local storage gone
+    assert page.evaluate("window.localStorage.length") == 0
+    assert page.evaluate("window.sessionStorage.length") == 0

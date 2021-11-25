@@ -45,9 +45,17 @@ Current means late 2021, thats when I last looked intensively at this.
     - get videos
     - get har (http archive) or other logs
 
+1. How do Frameworks support Test-Isolation?
+    - cookies
+    - {local,session}Storage
+    - extra windows
+    - open dialogs
+    - onbeforeclose handlers
 
 ## Comparison criteria
 
+- how does the API deal with invisible elements? (exclude from regular find, findeable if explicitly asked for)
+- How different is the API to deal with different browsers?
 - custom wait times
 - How to send return to textfields to trigger form submit handlers
 - Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input

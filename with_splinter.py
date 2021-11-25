@@ -145,5 +145,9 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     # Other APIs either allow you to set an explicit path, or create the whole path randomly
     actual_path = browser.screenshot(path.as_posix())
     assert_is_png(Path(actual_path))
-    
-    
+
+def test_isolation(browser, flask_uri, ask_to_leave_script):
+    """
+    - no support for reset, just starts a new browser with a new profile.
+    - Effective, if brute force. Also really slow. :-/
+    """

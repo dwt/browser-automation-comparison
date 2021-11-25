@@ -31,6 +31,18 @@ def flask_uri():
         
         kill()
 
+@pytest.fixture
+def ask_to_leave_script():
+    return '''
+        // interestingly Firefox webdriver doesn't show thes dialogs at all, even though this code works in normal Firefox
+        window.addEventListener('beforeunload', function (e) {
+            // Cancel the event
+            e.preventDefault(); // mozilla will now always show dialog
+            // Chrome requires returnValue to be set
+            e.returnValue = 'Fnord';
+        });
+    '''
+
 # Selenium style xpath matcher
 @pytest.fixture
 def xpath():

@@ -1,7 +1,7 @@
 # https://github.com/yashaka/selene
 
 from selene import by, be, have, query
-from conftest import find_firefox, assert_is_png
+from conftest import find_firefox, assert_is_png, assert_no_slower_than
 
 from selenium.webdriver.firefox.options import Options
 
@@ -154,3 +154,9 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     assert_is_png(path)
     # can generate filenames and has browser.last_screenshot() to get that path later
 
+def test_isolation(browser, flask_uri, ask_to_leave_script):
+    """
+    - no support for reset, just starts a new browser with a new profile
+    - Effective, if brute force. Also really slow. :-/
+    - Also has only very rudimentary support for window handling
+    """

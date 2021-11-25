@@ -12,7 +12,7 @@ from conftest import find_firefox, assert_is_png
 import pytest
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 WAIT = 2
 
@@ -154,3 +154,9 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     # and then browser.get_log('browser'). But that was lost in the transition to webdriver
     # One can still somewhat get logs by instructing firefox to put them into the geckodriver.log
     # but...
+
+def test_isolation(browser, flask_uri, ask_to_leave_script):
+    """
+    - no support for reset, just starts a new browser with a new profile
+    - Effective, if brute force. Also really slow. :-/
+    """

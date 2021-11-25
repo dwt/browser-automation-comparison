@@ -4,8 +4,7 @@ from pathlib import Path
 
 from selenium.webdriver.firefox.options import Options
 from splinter import Browser
-from firefox import find_firefox
-from conftest import assert_is_png
+from conftest import assert_is_png, find_firefox
 
 import pytest
 

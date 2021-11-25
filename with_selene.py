@@ -1,8 +1,7 @@
 # https://github.com/yashaka/selene
 
 from selene import by, be, have, query
-from firefox import find_firefox
-from conftest import assert_is_png
+from conftest import find_firefox, assert_is_png
 
 from selenium.webdriver.firefox.options import Options
 

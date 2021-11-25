@@ -7,8 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
-from firefox import find_firefox
-from conftest import assert_is_png
+from conftest import find_firefox, assert_is_png
 
 import pytest
 

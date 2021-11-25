@@ -2,6 +2,12 @@ import subprocess
 import pytest
 import re
 import atexit
+from subprocess import run
+
+def find_firefox():
+    paths = run(['mdfind', 'kMDItemFSName == Firefox.app'], capture_output=True).stdout.splitlines()
+    assert len(paths) > 0
+    return paths[0].strip().decode() + '/Contents/MacOS/firefox'
 
 @pytest.fixture(scope='session')
 def flask_uri():
@@ -54,3 +60,11 @@ def assert_is_file(path, expected_suffix, *expected_file_outputs):
     for expected_output in expected_file_outputs:
         assert expected_output in output
 
+from contextlib import contextmanager
+from datetime import datetime
+@contextmanager
+def assert_no_slower_than(seconds=1):
+    before = datetime.now()
+    yield
+    after = datetime.now()
+    assert (after - before).total_seconds() < seconds

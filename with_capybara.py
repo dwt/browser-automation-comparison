@@ -6,8 +6,7 @@ import capybara
 from capybara.dsl import *
 from selenium.webdriver.common.keys import Keys
 
-from firefox import find_firefox
-from conftest import assert_is_png
+from conftest import assert_is_png, assert_no_slower_than, find_firefox
 
 HEADLESS = True
 # HEADLESS = False

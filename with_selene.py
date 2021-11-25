@@ -183,3 +183,23 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     # Complex criteria - possible, but would have to write complex xpath if the label should be taken into account too
     assert_field(by.css('#input_id[placeholder=input_placeholder]'))
 
+def test_debugging_support(browser, flask_uri, tmp_path):
+    """
+    - verbose...
+    - does not take path objects as argument. :-/
+    - nothing special
+    """
+    browser.open(flask_uri + '/selector_playground')
+    
+    # get html of page
+    assert '<label for' in browser.element(by.css('html')).get(query.outer_html)
+    
+    # get html of a selection
+    field = browser.element(by.name('input_name'))
+    assert field.get(query.outer_html).startswith('<input id=')
+    
+    # get screenshot of page
+    path = tmp_path / 'full_screenshot.png'
+    browser.take_screenshot(path.as_posix())
+    assert_is_png(path)
+

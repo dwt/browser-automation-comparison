@@ -111,6 +111,7 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     """
     - Selection is rather limited if you don't want to fall back to css / xpath constantly
     - at least this allows integrating selection libraries like xpath.py
+    - no regex support?
     """
     browser.open(flask_uri + '/selector_playground')
     
@@ -124,6 +125,7 @@ def test_select_by_different_criteria(browser, flask_uri, xpath):
     # by.link_text, by.partial_link_text, by.partial_text, by.text not applicable
     
     # no special support for Aria
+    assert_field(by.css('[aria-label=input_aria_label]'))
     
     # Complex criteria, no special support, can be approximated by concatenating xpath or css conditions
     assert_field(by.xpath('//*[@id="input_id"][@placeholder="input_placeholder"]'))
@@ -151,55 +153,4 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     browser.save_screenshot(path.as_posix()) # doesn't accept pathlib paths!
     assert_is_png(path)
     # can generate filenames and has browser.last_screenshot() to get that path later
-
-def test_select_by_different_criteria(browser, flask_uri, xpath):
-    """
-    - no regex support?
-    - complex conditions can only be done in css or xpath. :-(
-    - no special aria support
-    """
-    browser.open(flask_uri + '/selector_playground')
-    
-    def assert_field(*args, **kwargs):
-        assert browser.element(*args, **kwargs).get(query.value) == 'input_value'
-    
-    # simple criterias
-    assert_field(by.name('input_name'))
-    assert_field(by.css('[title=input_title]'))
-    assert_field(by.css('[placeholder=input_placeholder]'))
-    assert_field(by.css('[value=input_value]'))
-    
-    # could'nt get regexes to work
-    
-    # xpath packages can easily be integrated
-    assert_field(by.xpath(xpath.field('input_label')))
-    
-    assert_field(by.id('input_id'))
-    assert_field(by.xpath('//[@class=input_class]'))
-    
-    # Aria - no special support
-    assert_field(by.css('[aria-label=input_aria_label]'))
-    
-    # Complex criteria - possible, but would have to write complex xpath if the label should be taken into account too
-    assert_field(by.css('#input_id[placeholder=input_placeholder]'))
-
-def test_debugging_support(browser, flask_uri, tmp_path):
-    """
-    - verbose...
-    - does not take path objects as argument. :-/
-    - nothing special
-    """
-    browser.open(flask_uri + '/selector_playground')
-    
-    # get html of page
-    assert '<label for' in browser.element(by.css('html')).get(query.outer_html)
-    
-    # get html of a selection
-    field = browser.element(by.name('input_name'))
-    assert field.get(query.outer_html).startswith('<input id=')
-    
-    # get screenshot of page
-    path = tmp_path / 'full_screenshot.png'
-    browser.take_screenshot(path.as_posix())
-    assert_is_png(path)
 

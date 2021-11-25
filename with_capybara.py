@@ -3,7 +3,7 @@
 import re
 
 import capybara
-from capybara.dsl import *
+from capybara.dsl import page
 from selenium.webdriver.common.keys import Keys
 
 from conftest import assert_is_png, assert_no_slower_than, find_firefox
@@ -39,18 +39,18 @@ def test_google():
     - lots of warnings
     """
     
-    visit("https://google.com")
-    click_button('Ich stimme zu')
-    fill_in(title='Suche', value='Selenium')
+    page.visit("https://google.com")
+    page.click_button('Ich stimme zu')
+    page.fill_in(title='Suche', value='Selenium')
     # sadly doesn't return the found object, so no chaining
     # .send_keys(Keys.RETURN)
     # looks more like a bug than intention
     
     # There are two buttons, though technically only one of them should be visible
-    click_button('Google Suche', match='first')
+    page.click_button('Google Suche', match='first')
     
-    assert len(find_all('.g')) >= 10
-    assert has_selector('.g', text='Selenium automates browsers')
+    assert len(page.find_all('.g')) >= 10
+    assert page.has_selector('.g', text='Selenium automates browsers')
     
     capybara.reset_sessions()
 
@@ -59,23 +59,23 @@ def test_nested_select_with_retry(flask_uri):
     - nested searching just works. Ah the joy.
     - expressive find() is a joy to use
     """
-    visit(flask_uri + '/dynamic_disclose')
-    click_on('Trigger')  # Don't care wether it's a link or button
-    inner = find('#outer').find('#inner', text='fnord')
+    page.visit(flask_uri + '/dynamic_disclose')
+    page.click_on('Trigger')  # Don't care wether it's a link or button
+    inner = page.find('#outer').find('#inner', text='fnord')
     assert 'fnord' in inner.text
 
 def test_fill_form(flask_uri):
     """
     - as does searching by label or placeholder
     """
-    visit(flask_uri + '/form')
-    fill_in('First name', value='Martin')
-    fill_in('Last name', value='Häcker')
-    fill_in('your@email', value='foo@bar.org')
+    page.visit(flask_uri + '/form')
+    page.fill_in('First name', value='Martin')
+    page.fill_in('Last name', value='Häcker')
+    page.fill_in('your@email', value='foo@bar.org')
     
-    assert 'Martin' == find_field('First name').value
-    assert 'Häcker' == find_field('Last name').value
-    assert 'foo@bar.org' == find_field('your@email').value
+    assert 'Martin' == page.find_field('First name').value
+    assert 'Häcker' == page.find_field('Last name').value
+    assert 'foo@bar.org' == page.find_field('your@email').value
 
 def test_fallback_to_selenium_and_js(flask_uri):
     """
@@ -83,13 +83,13 @@ def test_fallback_to_selenium_and_js(flask_uri):
     - simple access to the selected dom node from js
     - wraps returned dom nodes into the native element
     """
-    visit(flask_uri + '/form')
+    page.visit(flask_uri + '/form')
     
     browser = page.driver.browser
     from selenium import webdriver
     assert isinstance(browser, webdriver.Firefox)
     
-    element = find_field('First name')
+    element = page.find_field('First name')
     
     from selenium.webdriver.remote.webelement import WebElement
     assert isinstance(element.native, WebElement)
@@ -104,10 +104,10 @@ def test_select_by_different_criteria(flask_uri):
     """
     - Just a joy to select stuff - every imaginable way just works
     """
-    visit(flask_uri + '/selector_playground')
+    page.visit(flask_uri + '/selector_playground')
     
     def assert_field(*args, **kwargs):
-        assert find_field(*args, **kwargs).value == 'input_value'
+        assert page.find_field(*args, **kwargs).value == 'input_value'
     
     # simple criterias
     assert_field('input_name')
@@ -139,8 +139,8 @@ def test_debugging_support(flask_uri, tmp_path):
     - getting at the html for a selection is not intuitive
     - capybara doesn't seem to expose a way to differentiate between html attributes and js properties
     """
-    visit(flask_uri + '/selector_playground')
-    field = find_field('input_name')
+    page.visit(flask_uri + '/selector_playground')
+    field = page.find_field('input_name')
     
     # get html of page
     assert '<label for' in page.html

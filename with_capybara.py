@@ -6,6 +6,7 @@ import capybara
 from capybara.dsl import page
 from selenium.webdriver.common.keys import Keys
 
+import pytest
 from conftest import assert_is_png, assert_no_slower_than, find_firefox
 
 HEADLESS = True
@@ -233,3 +234,62 @@ def test_isolation(flask_uri, ask_to_leave_script):
     # local storage gone
     assert page.evaluate_script("window.localStorage.length") == 0
     assert page.evaluate_script("window.sessionStorage.length") == 0
+
+def test_dialogs(flask_uri):
+    """
+    - Surprisingly there is no way to check wether any js alert is visible
+    - Selenium is not nice, but at least it provides a fallback
+    """
+    page.visit(flask_uri)
+    # accepting or dismissing an anticipated alert ist simple
+    with page.accept_alert():
+        # does not block on evaluating `alert()`!
+        page.evaluate_script('alert("fnord")')
+    
+    # detect that an alert is currently being shown
+    page.evaluate_script('alert("fnord")')
+    # no official api?
+    # There is private API
+    assert page.driver._find_modal() is not None
+    # And there is the fallback to selenium
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    alert = WebDriverWait(page.driver.browser, 0).until(EC.alert_is_present())
+    assert alert is not None
+    alert.accept()
+    # no good way to check that _no_ alert is present
+    from selenium.common.exceptions import NoAlertPresentException
+    with pytest.raises(NoAlertPresentException):
+        page.driver.browser.switch_to.alert
+
+def test_working_with_multiple_window(flask_uri):
+    """
+    - Surprisingly the capybara API doesn't have a window object that also inherits the capybara dsl.
+      Thus it doesn't seem possible to talk to a specific window directly
+    - Other than that, working with multiple windows is a breeze
+    """
+    page.visit(flask_uri)   
+    page.fill_in('input_label', value='first window')
+    # multiple windows
+    with page.window(page.open_new_window()):
+        page.visit(flask_uri)
+        page.fill_in('input_label', value='second window')
+        assert page.find_field('input_label').value == 'second window'
+        # it's a bit strange that the page is a proxy to the /current page/ that is not explicit in the capybara api
+    
+    assert page.find_field('input_label').value == 'first window'
+    
+    # What is really simple though is getting a window reference to a window that is opened by the page (e.g. a click or js)
+    window = page.window_opened_by(lambda: page.open_new_window())
+    # that window is actually an object, but the capybara API seems not to be available on it.
+    # instead one has to make it the 'current' window
+    # Either via a context manager
+    with page.window(window):
+        page.visit(flask_uri)
+        page.fill_in('input_label', value='third window')
+    
+    assert page.find_field('input_label').value == 'first window'
+    # or explicitly
+    page.switch_to_window(window)
+    # now the API interacts with that window
+    assert page.find_field('input_label').value == 'third window'

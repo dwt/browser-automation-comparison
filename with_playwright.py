@@ -223,15 +223,21 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     third_page = context.new_page()
     third_page.goto(flask_uri)
     third_page.evaluate(ask_to_leave_script)
+    # page needs a change otherwise the onbeforeunload doesn't trigger
+    third_page.fill('text=input_label', value='fnord')
     
+    did_handle_beforeunload = False
     # beforeunload handlers need to be explicitly triggered
     # but I can't get them to run. :-(
     def handle_dialog(dialog):
+        global did_handle_beforeunload
+        did_handle_beforeunload = True
         assert dialog.type == 'beforeunload'
         dialog.dismiss()
-
     third_page.on('dialog', handle_dialog)
     third_page.close(run_before_unload=True)
+    # Fails, not sure why that is, the dialog just doesn't show up
+    # assert did_handle_beforeunload
     
     # This is the big reset
     # quite fast!

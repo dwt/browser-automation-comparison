@@ -16,7 +16,7 @@ def init_selenium_driver(app):
     
     from selenium.webdriver.firefox.options import Options
     options = Options()
-    options.binary = find_firefox()
+    options.binary_location = find_firefox()
     options.headless = HEADLESS
     
     from selenium.webdriver.common.desired_capabilities import DesiredCapabilities

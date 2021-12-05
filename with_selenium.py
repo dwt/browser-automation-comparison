@@ -1,11 +1,14 @@
 # https://www.selenium.dev/selenium/docs/api/py/
 
+from contextlib import contextmanager
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.alert import Alert
 
 from conftest import find_firefox, assert_is_png
 
@@ -20,6 +23,8 @@ WAIT = 2
 def browser():
     options = webdriver.firefox.options.Options()
     options.headless = HEADLESS
+    options.set_preference("dom.disable_beforeunload", False)
+    
     browser = webdriver.Firefox(options=options, firefox_binary=find_firefox())
     browser.implicitly_wait(WAIT)
     yield browser
@@ -160,3 +165,69 @@ def test_isolation(browser, flask_uri, ask_to_leave_script):
     - no support for reset, just starts a new browser with a new profile
     - Effective, if brute force. Also really slow. :-/
     """
+
+def test_dialogs(browser, flask_uri, ask_to_leave_script):
+    """
+    - surprisingly easy nice api to work with alerts
+    """
+    browser.get(flask_uri)
+    # accepting or dismissing an anticipated alert ist simple
+    browser.execute_script('alert("fnord")')
+    browser.switch_to.alert.accept()
+    
+    # detect that an alert is currently being shown
+    assert EC.alert_is_present()(browser) is False
+    browser.execute_script('alert("fnord")')
+    assert isinstance(EC.alert_is_present()(browser), Alert)
+    browser.switch_to.alert.accept()
+    
+    # can work with leave alerts the same way
+    browser.execute_script(ask_to_leave_script)
+    element = browser.find_element(*by_label("input_label"))
+    element.send_keys('fnord') # now page is changed
+    browser.get(flask_uri)
+    assert isinstance(EC.alert_is_present()(browser), Alert)
+    browser.switch_to.alert.accept()
+    assert EC.alert_is_present()(browser) is False
+
+@contextmanager
+def window(browser, new_indow_handle):
+    current_window_handle = browser.current_window_handle
+    browser.switch_to.window(new_indow_handle)
+    yield
+    browser.switch_to.window(current_window_handle)
+
+def test_working_with_multiple_window(browser, flask_uri):
+    """
+    - Has the concept `driver.current_window`, and therefore 
+      no real object to talk to a specific window.
+    - can be worked around, but not so super nice
+    """
+    
+    def set_value(selector, value):
+        element = browser.find_element(*selector)
+        element.clear()
+        element.send_keys(value)
+    
+    first_window_handle = browser.current_window_handle
+    browser.get(flask_uri)
+    set_value(by_label("input_label"), 'first window')
+    
+    def window_handle_opened_by(a_function):
+        before = set(browser.window_handles)
+        a_function()
+        after = set(browser.window_handles)
+        new_windows = after - before
+        assert 1 == len(new_windows), 'multiple windows opened by function'
+        return new_windows.pop()
+    
+    # multiple windows
+    
+    second_window_handle = window_handle_opened_by(lambda: browser.execute_script('window.open()'))
+    with window(browser, second_window_handle):
+        browser.get(flask_uri)
+        set_value(by_label("input_label"), 'second window')
+        assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'second window'
+    
+    assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first window'
+    

@@ -154,9 +154,35 @@ def test_debugging_support(browser, flask_uri, tmp_path):
     assert_is_png(path)
     # can generate filenames and has browser.last_screenshot() to get that path later
 
+from contextlib import contextmanager
+@contextmanager
+def window(browser, a_window):
+    original_window = browser.get(query.current_tab)
+    browser.switch_to.window(a_window)
+    try:
+        yield
+    finally:
+        browser.switch_to.window(original_window)
+
+def window_opened_by(browser, a_function):
+    original_window = browser.get(query.current_tab)
+    tabs_before = browser.get(query.tabs)
+    a_function()
+    tabs_after = browser.get(query.tabs)
+    assert tabs_before != tabs_after
+    new_windows = set(tabs_after) - set(tabs_before)
+    assert len(new_windows) == 1
+    # should not be neccessary, as webdriver should not switch window, but...
+    browser.switch_to.window(original_window)
+    return new_windows.pop()
+
 def test_isolation(browser, flask_uri, ask_to_leave_script):
     """
     - no support for reset, just starts a new browser with a new profile
     - Effective, if brute force. Also really slow. :-/
     - Also has only very rudimentary support for window handling
     """
+
+
+# selene has query.attribute and query.js_property and should therefore know about that difference! Check that!
+# uses the package webdriver_manager to auto-download drivers, see if that works too

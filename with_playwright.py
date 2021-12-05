@@ -6,6 +6,7 @@
 # - can control ajax requests
 
 
+import pdb
 from playwright.sync_api import PdfMargins, sync_playwright
 
 import pytest
@@ -15,15 +16,26 @@ from conftest import assert_is_png, assert_is_file, assert_no_slower_than
 HEADLESS = True
 HEADLESS = False
 
-@pytest.fixture
-def page():
+@pytest.fixture(scope='session')
+def browser():
     with sync_playwright() as playwright:
         browser = playwright.firefox.launch(headless=HEADLESS)
-        context = browser.new_context()
-        page = context.new_page()
-        page.set_default_timeout(5000)
-        yield page
+        yield browser
         browser.close()
+
+# contexts are what guarantees test isolation - every test gets a new one
+@pytest.fixture
+def context(browser):
+    context = browser.new_context()
+    yield context
+    context.close()
+
+# and can potentially open many pages, which are auto closed when the context is
+@pytest.fixture
+def page(context):
+    page = context.new_page()
+    page.set_default_timeout(5000)
+    yield page
 
 def test_google(page):
     """
@@ -259,3 +271,62 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     # local storage gone
     assert page.evaluate("window.localStorage.length") == 0
     assert page.evaluate("window.sessionStorage.length") == 0
+
+def test_dialogs(page, flask_uri):
+    """
+    - No way to detect / get at an (already) open dialog
+    - not possible to test page leave dialogs? Can't get them to show
+    """
+    # alerts
+    page.goto(flask_uri)
+    
+    # accepting or dismissing an anticipated alert requires a handler
+    def handle_dialog(dialog):
+        assert dialog.type == 'alert'
+        assert dialog.message == 'fnord'
+        dialog.accept()
+    
+    page.on('dialog', handle_dialog)
+    page.evaluate('alert("fnord")')
+    # this closes all future dialogs
+    page.evaluate('alert("fnord")')
+    # but interestingly doesn't accept dialogs opened asynchronouslys
+    page.evaluate('setTimeout(() => alert("fnord"), 0)')
+    page.remove_listener('dialog', handle_dialog)
+    # funny enough, triggering another alert dismisses both, 
+    # it seems the standard listener (no listener) can clean up pretty well
+    page.evaluate('alert("fnord")')
+    
+    # detect that an alert is currently being shown, i.e. how to deal with async code opening alerts?
+    page.evaluate('setTimeout(() => alert("fnord"), 0)')
+    # There seems to be no concept of either detecting them or dealing with them
+    # Selenium at least has browser.switch_to.alert - but here, nothing?
+
+def test_working_with_multiple_window(page, context, flask_uri):
+    page.goto(flask_uri)
+    page.fill('text=input_label', value='first window')
+    
+    # multiple windows
+    with page.expect_popup() as popup:
+        second_page = context.new_page()
+        second_page.goto(flask_uri)
+        second_page.fill_in('input_label', value='second window')
+        assert page.find_field('input_label').value == 'second window'
+        # it's a bit strange that the page is a proxy to the /current page/ that is not explicit in the capybara api
+    
+    assert page.find_field('input_label').value == 'first window'
+    
+    # What is really simple though is getting a window reference to a window that is opened by the page (e.g. a click or js)
+    window = page.window_opened_by(lambda: page.open_new_window())
+    # that window is actually an object, but the capybara API seems not to be available on it.
+    # instead one has to make it the 'current' window
+    # Either via a context manager
+    with page.window(window):
+        page.visit(flask_uri)
+        page.fill_in('input_label', value='third window')
+    
+    assert page.find_field('input_label').value == 'first window'
+    # or explicitly
+    page.switch_to_window(window)
+    # now the API interacts with that window
+    assert page.find_field('input_label').value == 'third window'

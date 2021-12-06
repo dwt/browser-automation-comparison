@@ -43,8 +43,8 @@ capybara.default_max_wait_time = 5
 def test_google():
     """
     - Complicated setup to set custom firefox path
-    - pretty much the original seleinum api. Nice!
-    - lots of warnings
+    - pretty much the original capybara api. Nice!
+    - just running generates warnings :-(
     """
     
     page.visit("https://google.com")

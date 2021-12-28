@@ -52,6 +52,16 @@ Current means late 2021, thats when I last looked intensively at this.
     - open dialogs
     - onbeforeclose handlers
 
+1. How do frameworks deal with dialogs and windows?
+    - dialogs (alert, confirm, basic auth password)
+        - Basic auth ist often used to lock away staging/ci systems at the proxy level. That is secure, as long as these systems are https only
+    - new windows / tabs
+    - file uploads
+    - onBeforeUnload warning
+
+1. How do frameworks deal with basic authentication?
+    - Many staging/testing systems are protected with basic authentication because that is easy to configure at the proxy level without changing the application.
+
 ## Comparison criteria
 
 - how does the API deal with invisible elements? (exclude from regular find, findeable if explicitly asked for)

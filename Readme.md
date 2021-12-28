@@ -64,6 +64,8 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Comparison criteria
 
+- test mobile / touch interfaes
+- how to handle uploads, downloads
 - how does the API deal with invisible elements? (exclude from regular find, findeable if explicitly asked for)
 - How different is the API to deal with different browsers?
 - custom wait times
@@ -87,6 +89,7 @@ Current means late 2021, thats when I last looked intensively at this.
 - how to access the html of a portion of the page for debugging
 - how to handle the difference between an html attribute and a js property
 - can private browsing mode be accessed?
+- selene library to auto download drivers / browsers
 
 ## Further work
 
@@ -96,3 +99,4 @@ Current means late 2021, thats when I last looked intensively at this.
 - how does execution in containers work? How to debug failing tests?
 - What differentiates playwright from selenium? What features set it apart?
 - How to interact with the page via keyboard shortcuts
+- check how easy it is to switch to chromium, safari

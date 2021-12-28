@@ -11,7 +11,7 @@ from playwright.sync_api import PdfMargins, sync_playwright
 
 import pytest
 
-from conftest import assert_is_png, assert_is_file, assert_no_slower_than
+from conftest import assert_is_png, assert_is_file, assert_no_slower_than, add_auth_to_uri
 
 HEADLESS = True
 HEADLESS = False
@@ -330,3 +330,30 @@ def test_working_with_multiple_window(page, context, flask_uri):
     page.switch_to_window(window)
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
+
+def test_basic_auth(page, browser, flask_uri):
+    """
+    - basic auth in url works
+    - basic auth in context works
+    """
+    # Strangely the authentication dialog is not shown at all
+    page.goto(flask_uri + '/basic_auth')
+    
+    assert page.inner_text('body') == 'You need to authenticate'
+    
+    # Even though this is not documented, it works fine
+    page.goto(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')
+    # Thats because playwright auto enables the setting 
+    # http://kb.mozillazine.org/Network.http.phishy-userpass-length
+    # network.http.phishy-userpass-length 255
+
+    assert page.inner_text('body') == 'Authenticated'
+    
+    # Accoring to the docs this is the recommended way to do basic authentication
+    context = browser.new_context(
+        http_credentials={"username": "admin", "password": "password"}
+    )
+    page = context.new_page()
+    page.goto(flask_uri + '/basic_auth')
+    assert page.inner_text('body') == 'Authenticated'
+    

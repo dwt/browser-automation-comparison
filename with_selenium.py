@@ -10,7 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.alert import Alert
 
-from conftest import find_firefox, assert_is_png
+from conftest import find_firefox, assert_is_png, add_auth_to_uri
 
 import pytest
 
@@ -23,8 +23,13 @@ WAIT = 2
 def browser():
     options = webdriver.firefox.options.Options()
     options.headless = HEADLESS
+    # required or marionette will not allow them
     options.set_preference("dom.disable_beforeunload", False)
-    
+    # required to allow username and password in url for basic auth
+    # http://kb.mozillazine.org/Network.http.phishy-userpass-length
+    # currently set automatically
+    # options.set_preference('network.http.phishy-userpass-length', 255)
+
     browser = webdriver.Firefox(options=options, firefox_binary=find_firefox())
     browser.implicitly_wait(WAIT)
     yield browser
@@ -230,4 +235,35 @@ def test_working_with_multiple_window(browser, flask_uri):
         assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'second window'
     
     assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first window'
+
+def is_modal_present(browser):
+    return EC.alert_is_present()(browser)
+
+def test_basic_auth(browser, flask_uri):
+    """
+    - Selenium doesn't support basic auth dialogs natively
+    - but user:pass@uri does work well enough
+    """
+    # Strangely capybara is missing support to access auth dialogs
+    # However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
+    browser.get(flask_uri + '/basic_auth')
     
+    # easy to dismiss auth alert
+    browser.switch_to.alert.dismiss()
+    text = browser.find_element(By.XPATH, '//body').text
+    assert text == 'You need to authenticate'
+    
+    assert not is_modal_present(browser)
+    
+    # In the past it was possible to authenticate like this
+    # browser.get(flask_uri + '/basic_auth')
+    # browser.switch_to.alert.send_keys('user\tpass\n')
+    # but with marionette / w3c driver, that doesn't work anymore, because of 
+    # https://github.com/w3c/webdriver/issues/385
+    
+    # Selenium does not support auth prompts, so the password has to be submitted in the URL
+    # Requires preference: network.http.phishy-userpass-length
+    browser.get(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')
+    
+    text = browser.find_element(By.XPATH, '//body').text
+    assert text == 'Authenticated'

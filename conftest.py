@@ -31,6 +31,12 @@ def flask_uri():
         
         kill()
 
+def add_auth_to_uri(uri, username, password):
+    import urllib
+    parse_result = urllib.parse.urlparse(uri)
+    parse_result_with_auth = urllib.parse.ParseResult(parse_result[0], f'{username}:{password}@' + parse_result[1], *parse_result[2:])
+    return parse_result_with_auth.geturl()
+
 @pytest.fixture
 def ask_to_leave_script():
     return '''

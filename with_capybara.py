@@ -7,10 +7,10 @@ from capybara.dsl import page
 from selenium.webdriver.common.keys import Keys
 
 import pytest
-from conftest import assert_is_png, assert_no_slower_than, find_firefox
+from conftest import assert_is_png, assert_no_slower_than, find_firefox, add_auth_to_uri
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @capybara.register_driver("selenium")
 def init_selenium_driver(app):
@@ -22,7 +22,7 @@ def init_selenium_driver(app):
     # otherwise marionette automatically disables beforeunload event handling
     # still requires interaction to trigger
     options.set_preference("dom.disable_beforeunload", False)
-    
+
     from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
     
     capabilities = DesiredCapabilities.FIREFOX.copy()
@@ -160,7 +160,6 @@ def test_debugging_support(flask_uri, tmp_path):
     page.save_screenshot(path)
     assert_is_png(path)
 
-
 def test_isolation(flask_uri, ask_to_leave_script):
     """
     - easy fast reset between tests, that resets pretty much everything that normal web applications use
@@ -249,7 +248,7 @@ def test_dialogs(flask_uri):
     # detect that an alert is currently being shown
     page.evaluate_script('alert("fnord")')
     # no official api?
-    # There is private API
+    # There is private API, that can be used to detect a modal is present, but fails if it is not
     assert page.driver._find_modal() is not None
     # And there is the fallback to selenium
     from selenium.webdriver.support.ui import WebDriverWait
@@ -293,3 +292,40 @@ def test_working_with_multiple_window(flask_uri):
     page.switch_to_window(window)
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
+
+def is_modal_present():
+    # The only way capybara allows to check for an alert is to use the private API _find_modal() 
+    # which raises if no dialog is present
+    try:
+        with capybara.using_wait_time(0):
+            # _find_modal(wait=0) waits way longer than using_wait_time()
+            page.driver._find_modal()
+        return True
+    except capybara.exceptions.ModalNotFound as ignored:
+        return False
+    
+    # Falling back to selenium would actually be simpler and cleaner
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    return EC.alert_is_present()(page.driver.browser)
+
+def test_basic_auth(flask_uri):
+    """
+    - capybara does not natively support a way to check wether a modal dialog is present
+    - python does not make it easy to add a username:password@url to a url. Why?
+    - surprisingly Firefox does not complain about username:password@url urls and just accepts it.
+    """
+    # Strangely capybara is missing support to access auth dialogs
+    # However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
+    with page.dismiss_prompt():
+        page.visit(flask_uri + '/basic_auth')
+    
+    assert page.text == 'You need to authenticate'
+    
+    assert not is_modal_present()
+    # Selenium does not support auth prompts, so the password has to be submitted in the URL
+    # alternative is to add username:password@ befor the host in the url, but most browsers  
+    # requires a custom setting to re-enable this feature.
+    # Firefox: network.http.phishy-userpass-length 255 (currently enabled automatically)
+    page.visit(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')
+    assert page.text == 'Authenticated'

@@ -1,3 +1,5 @@
+import functools
+
 import flask
 
 app = flask.Flask(__name__)
@@ -47,3 +49,26 @@ def selector_playground():
         <div id=div_id>div_text</div>
     </form>
     '''
+
+def is_correct_auth(username, password):
+    return username == 'admin' and password == 'password'
+
+def authenticate():
+    response = flask.make_response("You need to authenticate")
+    response.status_code = 401
+    response.headers['WWW-Authenticate'] = 'Basic realm="Main"'
+    return response
+
+def requires_basic_auth(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        auth = flask.request.authorization
+        if not auth or not is_correct_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+@app.get('/basic_auth')
+@requires_basic_auth
+def basic_auth():
+    return 'Authenticated'

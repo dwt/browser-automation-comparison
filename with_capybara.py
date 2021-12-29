@@ -299,6 +299,10 @@ def test_working_with_multiple_window():
     assert page.find_field('input_label').value == 'third window'
 
 def test_work_with_multiple_browsers():
+    """
+    - simple and consistent.
+    - can be used via conext manager or via explicit session objects (though slightly more complicated)
+    """
     page.visit('/')
     page.fill_in('input_label', value='first browser')
     

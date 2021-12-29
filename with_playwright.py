@@ -334,6 +334,9 @@ def test_working_with_multiple_window(page, context, flask_uri):
     assert page.find_field('input_label').value == 'third window'
 
 def test_work_with_multiple_browsers(page, browser, flask_uri):
+    """
+    - simple isolation with explicit objects representing the browsers
+    """
     page.goto(flask_uri)
     page.fill_in('input_label', value='first browser')
     

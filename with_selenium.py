@@ -240,6 +240,10 @@ def test_working_with_multiple_window(browser, flask_uri):
     assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first window'
 
 def test_work_with_multiple_browsers(browser, browser2, flask_uri):
+    """
+    - fairly straight forward, just create a second browser and go
+    - pytest fixture gives fairly nice lifecycle management
+    """
     def fill_in(browser, label, value):
         element = browser.find_element(*by_label(label))
         element.clear()

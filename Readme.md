@@ -68,27 +68,18 @@ Current means late 2021, thats when I last looked intensively at this.
 ## Comparison criteria
 
 - test mobile / touch interfaes
-- how to handle uploads, downloads
 - How different is the API to deal with different browsers?
 - custom wait times
 - How to send return to textfields to trigger form submit handlers
 - Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input
-- How can test isolation be achieved?
 - Can it simulate multiple concurrent browsers?
-- How to deal with multiple windows and popups?
-- How to handle login / basic authentication
 - File up-/download
+- how to handle uploads, downloads
 - drag'n'drop
-- Support for async python (might be that playwright supports running multiple browsers in parallel this way)
-- Error handling
-  - Try to interact with offscreen element
-  - Try to interact with hidden / invisible elements
-  - Try to interact with element behind another element
-- touch intereaction / in general mobile testing
 - hover
+- Support for async python (might be that playwright supports running multiple browsers in parallel this way)
 - help() and repr() output, how helpfull is it?, how discoverable is the library interactively?
 - how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
-- how to access the html of a portion of the page for debugging
 - how to handle the difference between an html attribute and a js property
 - can private browsing mode be accessed?
 - selene library to auto download drivers / browsers

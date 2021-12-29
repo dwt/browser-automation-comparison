@@ -62,11 +62,13 @@ Current means late 2021, thats when I last looked intensively at this.
 1. How do frameworks deal with basic authentication?
     - Many staging/testing systems are protected with basic authentication because that is easy to configure at the proxy level without changing the application.
 
+1. How do frameworks deal with hidden elements?
+    - display:none, visibility:hidden, moved out of frame, behind other elements, scrolled out of the viewport
+
 ## Comparison criteria
 
 - test mobile / touch interfaes
 - how to handle uploads, downloads
-- how does the API deal with invisible elements? (exclude from regular find, findeable if explicitly asked for)
 - How different is the API to deal with different browsers?
 - custom wait times
 - How to send return to textfields to trigger form submit handlers

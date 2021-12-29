@@ -6,8 +6,8 @@
 # - can control ajax requests
 
 
-import pdb
-from playwright.sync_api import PdfMargins, sync_playwright
+from contextlib import contextmanager
+from playwright.sync_api import PdfMargins, sync_playwright, TimeoutError
 
 import pytest
 
@@ -15,6 +15,8 @@ from conftest import assert_is_png, assert_is_file, assert_no_slower_than, add_a
 
 HEADLESS = True
 HEADLESS = False
+
+WAIT = 5000
 
 @pytest.fixture(scope='session')
 def browser():
@@ -34,7 +36,7 @@ def context(browser):
 @pytest.fixture
 def page(context):
     page = context.new_page()
-    page.set_default_timeout(5000)
+    page.set_default_timeout(WAIT)
     yield page
 
 def test_google(page):
@@ -331,7 +333,7 @@ def test_working_with_multiple_window(page, context, flask_uri):
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
 
-def test_basic_auth(page, browser, flask_uri):
+def test_basic_auth(page, flask_uri):
     """
     - basic auth in url works
     - basic auth in context works
@@ -356,4 +358,79 @@ def test_basic_auth(page, browser, flask_uri):
     page = context.new_page()
     page.goto(flask_uri + '/basic_auth')
     assert page.inner_text('body') == 'Authenticated'
+
+def is_in_viewport(page, element):
+    viewport_height = page.evaluate('window.innerHeight')
+    viewport_width = page.evaluate('window.innerWidth')
+    scroll_from_top = page.evaluate('window.scrollY')
+    scroll_from_left = page.evaluate('window.scrollY')
     
+    rect = element.bounding_box()
+    
+    return not (
+        rect['y'] > viewport_height + scroll_from_top
+        or rect['x'] > viewport_width + scroll_from_left
+        or rect['y'] + rect['height'] < scroll_from_top
+        or rect['x'] + rect['width'] < scroll_from_left
+    )
+
+@contextmanager
+def using_wait_time(page, wait_time):
+    page.set_default_timeout(wait_time)
+    try:
+        yield
+    finally:
+        page.set_default_timeout(WAIT)
+
+def test_invisible_and_hidden_elements(flask_uri, page):
+    """
+    - no utility to temporarily reduce the default timeout
+    - timout of 0,1, <50 lead to various surprising errors, because internal checks of interactability cannot complete successfully.
+        - bug or feature?
+    - playwright has different and also strange ideas than selenium about what is considered visible
+        - and what text is considered visible? (inner_text behaves strange)
+    - very sensitive to short timeouts, because scrolling into view doesn't work anymore with very
+      short timeouts, even if the element in question is already scrolled into view
+    """
+    page.goto(flask_uri + '/hidden')
+    
+    # Ensure the page is rendered
+    assert page.query_selector('.visible').text_content() == 'Visible because just normal content in the body'
+    
+    def find(css_selector):
+        "way to long to type out every time"
+        return page.query_selector(css_selector)
+    
+    def assert_visibility(selector, *, is_visible, inner_text):
+        assert find(selector) is not None
+        # but at least they know wether they are visible
+        assert find(selector).is_visible() is is_visible
+        
+        # inner == sometimes is the visible text, but not always
+        assert find(selector).inner_text() == inner_text
+        # js can get all the text if needed
+        assert find(selector).text_content().startswith('Hidden because')
+        
+        # raises while trying to wait for elements to be visible, enabled and stable
+        with pytest.raises(TimeoutError):
+            find(selector).click()
+    
+    # no support to get the wait time or set / reduce it via context magager.
+    # Also hard to build yourself, because there is no getter for the current wait time
+    # wait times below 50 lead to errors, because playwright is not able to execute it's internal checks
+    with using_wait_time(page, 100):
+        assert_visibility('.invisible', is_visible=False, inner_text='')
+        # interesting that inner text of these hidden elements is returned?
+        assert_visibility('.removed', is_visible=False, inner_text='Hidden because display:none')
+        # strange that the moved out of frame element is considered visible
+        assert_visibility('.out_of_frame', is_visible=True, inner_text='Hidden because moved out of frame')
+        
+        assert_visibility('.behind', is_visible=True, inner_text='Hidden because behind another div')
+        
+        # Content scrolled out of view
+        # capybara is missing support to check wether an element is scrolled into view
+        assert not is_in_viewport(page, find('.below_scroll'))
+        assert find('.below_scroll').text_content() == 'Visible but scrolled out ouf view'
+        # will auto scroll into view
+        find('.below_scroll').click()
+        assert is_in_viewport(page, find('.below_scroll'))

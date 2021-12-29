@@ -2,12 +2,13 @@
 
 from contextlib import contextmanager
 
+import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.alert import Alert
 
 from conftest import find_firefox, assert_is_png, add_auth_to_uri
@@ -267,3 +268,82 @@ def test_basic_auth(browser, flask_uri):
     
     text = browser.find_element(By.XPATH, '//body').text
     assert text == 'Authenticated'
+
+def is_in_viewport(browser, element):
+    viewport_height = browser.execute_script('return window.innerHeight')
+    viewport_width = browser.execute_script('return window.innerWidth')
+    scroll_from_top = browser.execute_script('return window.scrollY')
+    scroll_from_left = browser.execute_script('return window.scrollY')
+    
+    client_rect = browser.execute_script('return arguments[0].getBoundingClientRect()', element)
+    
+    return not (
+        client_rect['top'] > viewport_height + scroll_from_top
+        or client_rect['left'] > viewport_width + scroll_from_left
+        or  client_rect['bottom'] < scroll_from_top
+        or client_rect['right'] < scroll_from_left
+    )
+
+@contextmanager
+def using_wait_time(browser, wait_time):
+    browser.implicitly_wait(wait_time)
+    try:
+        yield
+    finally:
+        browser.implicitly_wait(WAIT)
+
+def test_invisible_and_hidden_elements(flask_uri, browser):
+    """
+    - cannot set / reduce implicit wait time via context manager
+    - cannot get current implicit wait time
+    - treats content hidden behind other elements as visible
+        - but at least raises when trying to interact with it
+    - Surprisingly capybara doesn't provide a utility to check whether an element is outside the viewport. js to the rescue
+    """
+    browser.get(flask_uri + '/hidden')
+    
+    def find(css_selector):
+        "way to long to type out every time"
+        return browser.find_element(By.CSS_SELECTOR, css_selector)
+    
+    # Ensure the page is rendered
+    assert find('.visible').text == 'Visible because just normal content in the body'
+    
+    def assert_visibility(
+        selector, *, is_visible, text,
+        interaction_exception=ElementNotInteractableException
+    ):
+        # invisible elements are returned jus as well
+        assert find(selector) is not None
+        # but at least they know wether they are visible
+        assert find(selector).is_displayed() is is_visible
+        
+        # no API to get the text wether it is visible or not, can just get the visible text
+        assert find(selector).text == text
+        # js can get all the text if needed
+        assert find(selector).get_attribute('textContent').startswith('Hidden because')
+        
+        with pytest.raises(interaction_exception):
+            find(selector).click()
+    
+    # no support to get the wait time or set / reduce it via context magager.
+    # Also hard to build yourself, because there is no getter for the current wait time
+    with using_wait_time(browser, 0):
+        # All of this makes sense
+        assert_visibility('.invisible', is_visible=False, text='')
+        assert_visibility('.removed', is_visible=False, text='')
+        assert_visibility('.out_of_frame', is_visible=False, text='')
+        # Strange that the browser doesn't understand that this element is invisible
+        # at least it understands that it cannot be clicked
+        assert_visibility(
+            '.behind', is_visible=True, text='Hidden because behind another div',
+            interaction_exception=ElementClickInterceptedException
+        )
+        
+        # Content scrolled out of view
+        # capybara is missing support to check wether an element is scrolled into view
+        assert not is_in_viewport(browser, find('.below_scroll'))
+        assert find('.below_scroll').text == 'Visible but scrolled out ouf view'
+        # will auto scroll into view
+        find('.below_scroll').click()
+        assert is_in_viewport(browser, find('.below_scroll'))

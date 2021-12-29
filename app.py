@@ -72,3 +72,23 @@ def requires_basic_auth(f):
 @requires_basic_auth
 def basic_auth():
     return 'Authenticated'
+
+@app.get('/hidden')
+def hidden():
+    return '''
+    <!doctype html>
+    <html>
+    <body>
+        <span class="visible">Visible because just normal content in the body</span>
+        <span class="invisible" style="visibility:hidden">Hidden because visibility:hidden</span>
+        <span class="removed" style="display:none">Hidden because display:none</span>
+        <span class="out_of_frame" style="position:absolute; left:-100vw">Hidden because moved out of frame</span>
+        <div style="position:relative">
+            <div class="behind" style="position:absolute; top:0; left:0; width:200px; height:200px">Hidden because behind another div</div>
+            <div style="position:absolute; top:0; left:0; width:200px; height:200px; background-color:white">Front</div>
+        </div>
+        <div class="placeholder" style="height:100vh"></div>
+        <span class="below_scroll">Visible but scrolled out ouf view</span>
+    </body>
+    </html>
+    '''

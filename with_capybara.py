@@ -4,8 +4,9 @@ import re
 
 import capybara
 from capybara.dsl import page
+import selenium
 from selenium.webdriver.common.keys import Keys
-
+from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 import pytest
 from conftest import assert_is_png, assert_no_slower_than, find_firefox, add_auth_to_uri
 
@@ -299,7 +300,7 @@ def is_modal_present():
     try:
         with capybara.using_wait_time(0):
             # _find_modal(wait=0) waits way longer than using_wait_time()
-            page.driver._find_modal()
+            page.driver._find_modal(wait=0)
         return True
     except capybara.exceptions.ModalNotFound as ignored:
         return False
@@ -329,3 +330,67 @@ def test_basic_auth(flask_uri):
     # Firefox: network.http.phishy-userpass-length 255 (currently enabled automatically)
     page.visit(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')
     assert page.text == 'Authenticated'
+
+def is_in_viewport(element):
+    viewport_height = page.evaluate_script('window.innerHeight')
+    viewport_width = page.evaluate_script('window.innerWidth')
+    scroll_from_top = page.evaluate_script('window.scrollY')
+    scroll_from_left = page.evaluate_script('window.scrollY')
+    
+    client_rect = element.evaluate_script('this.getBoundingClientRect()')
+    
+    return not (
+        client_rect['top'] > viewport_height + scroll_from_top
+        or client_rect['left'] > viewport_width + scroll_from_left
+        or  client_rect['bottom'] < scroll_from_top
+        or client_rect['right'] < scroll_from_left
+    )
+    
+def test_invisible_and_hidden_elements(flask_uri):
+    """
+    - capybara by default doesn't find elements that are hidden in any way
+    - capybara has three attributes to get at the text of elements 
+        - all_text (js text_content)
+        - visible_text (basically native.text)
+        - text (either all_text or visible_text depending on capybara.ignore_hidden_elements or capybara.visible_text_only)
+    - Surprisingly capybara doesn't provide a utility to check whether an element is outside the viewport. js to the rescue
+    """
+    page.visit(flask_uri + '/hidden')
+    # Ensure the page is rendered
+    assert page.find('.visible').text == 'Visible because just normal content in the body'
+    
+    def assert_visibility(
+        selector, *, is_visible, text,
+        interaction_exception=ElementNotInteractableException
+    ):
+        assert page.find(selector, visible=False).all_text.startswith('Hidden because')
+        assert page.find(selector, visible=False).text == text
+        assert page.find(selector, visible=False).visible_text == text
+        
+        if not is_visible:
+            # raises if element is invisible, cannot accentally ignore
+            with pytest.raises(capybara.exceptions.ElementNotFound):
+                page.find(selector)
+        
+        # raises if element is invisible, cannot accidentally interact with hidden element
+        with pytest.raises(interaction_exception):
+            page.find(selector, visible=False).click()
+
+    # So convenient that this can be set using a context manager.
+    # For a test, an API that would hook into a teardown API could be nicer, as it doesn't indent the code
+    # But that requires integration from the API to (all) the test frameworks. So...
+    with capybara.using_wait_time(0):
+        assert_visibility('.invisible', is_visible=False, text='')
+        assert_visibility('.removed', is_visible=False, text='')
+        assert_visibility('.out_of_frame', is_visible=False, text='')
+        assert_visibility('.behind', is_visible=True, text='Hidden because behind another div',
+            interaction_exception=ElementClickInterceptedException
+        )
+        
+        # Content scrolled out of view
+        # capybara is missing support to check wether an element is scrolled into view
+        assert not is_in_viewport(page.find('.below_scroll'))
+        assert page.find('.below_scroll').text == 'Visible but scrolled out ouf view'
+        # will auto scroll into view
+        page.find('.below_scroll').click()
+        assert is_in_viewport(page.find('.below_scroll'))

@@ -67,20 +67,19 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Comparison criteria
 
-- test mobile / touch interfaes
+- Can it simulate multiple concurrent browsers?
+- how to handle the difference between an html attribute and a js property
 - How different is the API to deal with different browsers?
-- custom wait times
+- how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
+- test mobile / touch interfaes
 - How to send return to textfields to trigger form submit handlers
 - Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input
-- Can it simulate multiple concurrent browsers?
 - File up-/download
 - how to handle uploads, downloads
 - drag'n'drop
 - hover
 - Support for async python (might be that playwright supports running multiple browsers in parallel this way)
 - help() and repr() output, how helpfull is it?, how discoverable is the library interactively?
-- how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
-- how to handle the difference between an html attribute and a js property
 - can private browsing mode be accessed?
 - selene library to auto download drivers / browsers
 

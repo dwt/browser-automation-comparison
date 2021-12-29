@@ -36,6 +36,8 @@ def browser():
     yield browser
     browser.quit()
 
+browser2 = browser
+
 def test_google(browser):
     """
     - can auto wait
@@ -236,6 +238,21 @@ def test_working_with_multiple_window(browser, flask_uri):
         assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'second window'
     
     assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first window'
+
+def test_work_with_multiple_browsers(browser, browser2, flask_uri):
+    def fill_in(browser, label, value):
+        element = browser.find_element(*by_label(label))
+        element.clear()
+        element.send_keys(value)
+    
+    browser.get(flask_uri)
+    fill_in(browser, 'input_label', 'first browser')
+    
+    browser2.get(flask_uri)
+    fill_in(browser2, 'input_label', 'second browser')
+    
+    assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first browser'
+    assert browser2.find_element(*by_label('input_label')).get_attribute('value') == 'second browser'
 
 def is_modal_present(browser):
     return EC.alert_is_present()(browser)

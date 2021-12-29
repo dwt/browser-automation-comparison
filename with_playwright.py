@@ -333,6 +333,17 @@ def test_working_with_multiple_window(page, context, flask_uri):
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
 
+def test_work_with_multiple_browsers(page, browser, flask_uri):
+    page.goto(flask_uri)
+    page.fill_in('input_label', value='first browser')
+    
+    # equivalent to second browser, as we get guaranteed isolation
+    page2 = browser.new_context().new_page()
+    page2.fill_in('input_label', value='first browser')
+    
+    assert page.find_field('input_label').value == 'first window'
+    assert page2.find_field('input_label').value == 'first window'
+
 def test_basic_auth(page, flask_uri):
     """
     - basic auth in url works

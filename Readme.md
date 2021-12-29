@@ -59,6 +59,10 @@ Current means late 2021, thats when I last looked intensively at this.
     - file uploads
     - onBeforeUnload warning
 
+1. How do frameworks deal with multiple browsers
+    - to support multiple concurrent logins
+    - possibly for realtime interactions like chat
+
 1. How do frameworks deal with basic authentication?
     - Many staging/testing systems are protected with basic authentication because that is easy to configure at the proxy level without changing the application.
 
@@ -67,7 +71,6 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Comparison criteria
 
-- Can it simulate multiple concurrent browsers?
 - how to handle the difference between an html attribute and a js property
 - How different is the API to deal with different browsers?
 - how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)

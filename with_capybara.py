@@ -1,4 +1,5 @@
 # https://github.com/elliterate/capybara.py
+# https://elliterate.github.io/capybara.py/
 
 import re
 
@@ -7,10 +8,11 @@ from capybara.dsl import page
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 import pytest
+
 from conftest import assert_is_png, assert_no_slower_than, find_firefox, add_auth_to_uri
 
 HEADLESS = True
-# HEADLESS = False
+HEADLESS = False
 
 @capybara.register_driver("selenium")
 def init_selenium_driver(app):
@@ -297,7 +299,17 @@ def test_working_with_multiple_window():
     assert page.find_field('input_label').value == 'third window'
 
 def test_work_with_multiple_browsers():
-    pass
+    page.visit('/')
+    page.fill_in('input_label', value='first browser')
+    
+    with capybara.using_session('second browser'):
+        page.visit('/')
+        page.fill_in('input_label', value='second browser')
+
+    assert page.find_field('input_label').value == 'first browser'
+    
+    with capybara.using_session('second browser'):
+        assert page.find_field('input_label').value == 'second browser'
 
 def is_modal_present():
     # The only way capybara allows to check for an alert is to use the private API _find_modal() 

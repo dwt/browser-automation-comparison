@@ -4,14 +4,13 @@ import re
 
 import capybara
 from capybara.dsl import page
-import selenium
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 import pytest
 from conftest import assert_is_png, assert_no_slower_than, find_firefox, add_auth_to_uri
 
 HEADLESS = True
-HEADLESS = False
+# HEADLESS = False
 
 @capybara.register_driver("selenium")
 def init_selenium_driver(app):
@@ -37,9 +36,12 @@ def init_selenium_driver(app):
         clear_session_storage=True,
     )
 
-
 capybara.default_driver = "selenium"
 capybara.default_max_wait_time = 5
+
+@pytest.fixture(scope='session', autouse=True)
+def configure_base_url(flask_uri):
+    capybara.app_host = flask_uri
 
 def test_google():
     """
@@ -63,21 +65,21 @@ def test_google():
     
     capybara.reset_sessions()
 
-def test_nested_select_with_retry(flask_uri):
+def test_nested_select_with_retry():
     """
     - nested searching just works. Ah the joy.
     - expressive find() is a joy to use
     """
-    page.visit(flask_uri + '/dynamic_disclose')
+    page.visit('/dynamic_disclose')
     page.click_on('Trigger')  # Don't care wether it's a link or button
     inner = page.find('#outer').find('#inner', text='fnord')
     assert 'fnord' in inner.text
 
-def test_fill_form(flask_uri):
+def test_fill_form():
     """
     - as does searching by label or placeholder
     """
-    page.visit(flask_uri + '/form')
+    page.visit('/form')
     page.fill_in('First name', value='Martin')
     page.fill_in('Last name', value='Häcker')
     page.fill_in('your@email', value='foo@bar.org')
@@ -86,13 +88,13 @@ def test_fill_form(flask_uri):
     assert 'Häcker' == page.find_field('Last name').value
     assert 'foo@bar.org' == page.find_field('your@email').value
 
-def test_fallback_to_selenium_and_js(flask_uri):
+def test_fallback_to_selenium_and_js():
     """
     - simple escaping to selenium
     - simple access to the selected dom node from js
     - wraps returned dom nodes into the native element
     """
-    page.visit(flask_uri + '/form')
+    page.visit('/form')
     
     browser = page.driver.browser
     from selenium import webdriver
@@ -109,11 +111,11 @@ def test_fallback_to_selenium_and_js(flask_uri):
     # Can even return the correct wrapper element for dom references!
     assert element.evaluate_script('this.parentElement').tag_name == 'form'
 
-def test_select_by_different_criteria(flask_uri):
+def test_select_by_different_criteria():
     """
     - Just a joy to select stuff - every imaginable way just works
     """
-    page.visit(flask_uri + '/selector_playground')
+    page.visit('/selector_playground')
     
     def assert_field(*args, **kwargs):
         assert page.find_field(*args, **kwargs).value == 'input_value'
@@ -142,13 +144,13 @@ def test_select_by_different_criteria(flask_uri):
     # Complex criteria
     assert_field(id_='input_id', label='input_label', placeholder='input_placeholder')
 
-def test_debugging_support(flask_uri, tmp_path):
+def test_debugging_support(tmp_path):
     """
     - not very much special debugging support
     - getting at the html for a selection is not intuitive
     - capybara doesn't seem to expose a way to differentiate between html attributes and js properties
     """
-    page.visit(flask_uri + '/selector_playground')
+    page.visit('/selector_playground')
     field = page.find_field('input_name')
     
     # get html of page
@@ -161,13 +163,13 @@ def test_debugging_support(flask_uri, tmp_path):
     page.save_screenshot(path)
     assert_is_png(path)
 
-def test_isolation(flask_uri, ask_to_leave_script):
+def test_isolation(ask_to_leave_script):
     """
     - easy fast reset between tests, that resets pretty much everything that normal web applications use
     - cookies, localStorage, sessionStorage (though *Storage only if configured)
     - can deal with unload events that display a dialog (even though Firefox webdriver doesn't show them)
     """
-    page.visit(flask_uri)
+    page.visit('/')
     
     # set cookie
     # Capybara has no api to deal with cookies -> fallback to selenium
@@ -210,7 +212,7 @@ def test_isolation(flask_uri, ask_to_leave_script):
     # bug in capybara: background windows don't even have code to handle dialogs like onbeforeunload
     # see https://github.com/elliterate/capybara.py/issues/26
     # with page.window(page.open_new_window()):
-    #     page.visit(flask_uri)
+    #     page.visit('/')
     #     page.execute_script(ask_to_leave_script)
     #     # page interaction, so onbeforeunload is actually triggered
     #     page.fill_in('input_label', value='fnord')
@@ -226,7 +228,7 @@ def test_isolation(flask_uri, ask_to_leave_script):
     assert len(page.windows) == 1
     assert page.current_url == 'about:blank'
     
-    page.visit(flask_uri)
+    page.visit('/')
     
     # cookies gone
     assert len(page.driver.browser.get_cookies()) == 0
@@ -235,12 +237,12 @@ def test_isolation(flask_uri, ask_to_leave_script):
     assert page.evaluate_script("window.localStorage.length") == 0
     assert page.evaluate_script("window.sessionStorage.length") == 0
 
-def test_dialogs(flask_uri):
+def test_dialogs():
     """
     - Surprisingly there is no way to check wether any js alert is visible
     - Selenium is not nice, but at least it provides a fallback
     """
-    page.visit(flask_uri)
+    page.visit('/')
     # accepting or dismissing an anticipated alert ist simple
     with page.accept_alert():
         # does not block on evaluating `alert()`!
@@ -262,17 +264,17 @@ def test_dialogs(flask_uri):
     with pytest.raises(NoAlertPresentException):
         page.driver.browser.switch_to.alert
 
-def test_working_with_multiple_window(flask_uri):
+def test_working_with_multiple_window():
     """
     - Surprisingly the capybara API doesn't have a window object that also inherits the capybara dsl.
       Thus it doesn't seem possible to talk to a specific window directly
     - Other than that, working with multiple windows is a breeze
     """
-    page.visit(flask_uri)   
+    page.visit('/')   
     page.fill_in('input_label', value='first window')
     # multiple windows
     with page.window(page.open_new_window()):
-        page.visit(flask_uri)
+        page.visit('/')
         page.fill_in('input_label', value='second window')
         assert page.find_field('input_label').value == 'second window'
         # it's a bit strange that the page is a proxy to the /current page/ that is not explicit in the capybara api
@@ -285,7 +287,7 @@ def test_working_with_multiple_window(flask_uri):
     # instead one has to make it the 'current' window
     # Either via a context manager
     with page.window(window):
-        page.visit(flask_uri)
+        page.visit('/')
         page.fill_in('input_label', value='third window')
     
     assert page.find_field('input_label').value == 'first window'
@@ -293,6 +295,9 @@ def test_working_with_multiple_window(flask_uri):
     page.switch_to_window(window)
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
+
+def test_work_with_multiple_browsers():
+    pass
 
 def is_modal_present():
     # The only way capybara allows to check for an alert is to use the private API _find_modal() 
@@ -319,7 +324,7 @@ def test_basic_auth(flask_uri):
     # Strangely capybara is missing support to access auth dialogs
     # However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
     with page.dismiss_prompt():
-        page.visit(flask_uri + '/basic_auth')
+        page.visit('/basic_auth')
     
     assert page.text == 'You need to authenticate'
     
@@ -346,7 +351,7 @@ def is_in_viewport(element):
         or client_rect['right'] < scroll_from_left
     )
     
-def test_invisible_and_hidden_elements(flask_uri):
+def test_invisible_and_hidden_elements():
     """
     - capybara by default doesn't find elements that are hidden in any way
     - capybara has three attributes to get at the text of elements 
@@ -355,7 +360,7 @@ def test_invisible_and_hidden_elements(flask_uri):
         - text (either all_text or visible_text depending on capybara.ignore_hidden_elements or capybara.visible_text_only)
     - Surprisingly capybara doesn't provide a utility to check whether an element is outside the viewport. js to the rescue
     """
-    page.visit(flask_uri + '/hidden')
+    page.visit('/hidden')
     # Ensure the page is rendered
     assert page.find('.visible').text == 'Visible because just normal content in the body'
     

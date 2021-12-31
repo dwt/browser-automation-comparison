@@ -71,7 +71,6 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Comparison criteria
 
-- how to handle the difference between an html attribute and a js property
 - How different is the API to deal with different browsers?
 - how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
 - test mobile / touch interfaes

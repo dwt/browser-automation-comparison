@@ -5,9 +5,22 @@ import atexit
 from subprocess import run
 
 def find_firefox():
-    paths = run(['mdfind', 'kMDItemFSName == Firefox.app'], capture_output=True).stdout.splitlines()
+    return find_application('Firefox')
+
+def find_chrome():
+    return find_application('Google Chrome')
+
+def find_application(application_name, executable_name=None):
+    find_bundle_command = ['mdfind', f'kMDItemFSName == "{application_name}.app"']
+    extract_command = ['plutil', '-extract', 'CFBundleExecutable', 'raw', '-o', '-']
+    paths = run(find_bundle_command, capture_output=True).stdout.decode().splitlines()
+    
     assert len(paths) > 0
-    return paths[0].strip().decode() + '/Contents/MacOS/firefox'
+    bundle_path = paths[0].strip()
+    info_plist_path = bundle_path + '/Contents/Info.plist'
+    if executable_name is None:
+        executable_name = run(extract_command + [info_plist_path], capture_output=True).stdout.decode().splitlines()[0]
+    return bundle_path + '/Contents/MacOS/' + executable_name
 
 @pytest.fixture(scope='session')
 def flask_uri():
@@ -86,3 +99,14 @@ def assert_no_slower_than(seconds=1):
     yield
     after = datetime.now()
     assert (after - before).total_seconds() < seconds
+
+def pytest_addoption(parser):
+    parser.addoption("--browser", default='all', help="run all combinations")
+
+def pytest_generate_tests(metafunc):
+    if "browser_vendor" in metafunc.fixturenames:
+        browser_vendor = [metafunc.config.getoption("browser")]
+        if ['all'] == browser_vendor:
+            browser_vendor = ['firefox', 'chrome', 'safari']
+        metafunc.parametrize("browser_vendor", browser_vendor)
+

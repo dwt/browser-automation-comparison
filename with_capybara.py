@@ -95,6 +95,11 @@ skipif_safari = pytest.mark.skipif(
 capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
+@pytest.fixture(scope='function', autouse=True)
+def configure_driver(browser_vendor):
+    with capybara.using_driver(f"selenium-{browser_vendor}"):
+        yield
+
 @pytest.fixture(scope='session', autouse=True)
 def configure_base_url(flask_uri):
     capybara.app_host = flask_uri

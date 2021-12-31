@@ -5,18 +5,18 @@ import re
 
 import capybara
 from capybara.dsl import page
-from selenium.webdriver.common.keys import Keys
+from capybara.selenium.driver import Driver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 import pytest
 
-from conftest import assert_is_png, assert_no_slower_than, find_firefox, add_auth_to_uri
+from conftest import assert_is_png, assert_no_slower_than, find_firefox, find_application, find_chrome, add_auth_to_uri
 
 HEADLESS = True
 HEADLESS = False
 
-@capybara.register_driver("selenium")
-def init_selenium_driver(app):
-    
+@capybara.register_driver("selenium-firefox")
+def init_firefox(app):
     from selenium.webdriver.firefox.options import Options
     options = Options()
     options.binary_location = find_firefox()
@@ -24,13 +24,9 @@ def init_selenium_driver(app):
     # otherwise marionette automatically disables beforeunload event handling
     # still requires interaction to trigger
     options.set_preference("dom.disable_beforeunload", False)
-
-    from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
     
     capabilities = DesiredCapabilities.FIREFOX.copy()
     capabilities["marionette"] = True
-    
-    from capybara.selenium.driver import Driver
     
     return Driver(app, browser="firefox", options=options, desired_capabilities=capabilities,
         # cannot set these after the fact, so we set them here
@@ -38,20 +34,79 @@ def init_selenium_driver(app):
         clear_session_storage=True,
     )
 
-capybara.default_driver = "selenium"
+@capybara.register_driver("selenium-chrome")
+def init_chrome(app):
+    """
+    - Mostly behaves very similar to firefox
+    - a bit less well supported (alerts in background, access to basic auth dialogs)
+    - noticable faster
+    """
+    from selenium.webdriver.chrome.options import Options
+    options = Options()
+    options.binary_location = find_chrome()
+    options.headless = HEADLESS
+    
+    capabilities = DesiredCapabilities.CHROME.copy()
+    # capabilities["marionette"] = True
+
+    return Driver(app, browser="chrome", options=options, desired_capabilities=capabilities,
+        # cannot set these after the fact, so we set them here
+        clear_local_storage=True,
+        clear_session_storage=True,
+    )
+
+@capybara.register_driver('selenium-safari')
+def init_safari(app):
+    """
+    - very much more limited than either firefox or chrome
+    - does not (easily?) support creating a custom testing profile, 
+      so normal plugins, bookmarks, cookies, saved passwords etc. can interfere
+    - not possible to switch to Safari Technology Preview
+    """
+    # headless mode not supported, and since it's only supported on mac, custom path is also not neccessary
+    capabilities = DesiredCapabilities.SAFARI.copy()
+    # supposedly this asllow switching to technologyPreview, but doesn't seem to work
+    # capabilities["safari.options"] = {
+    #     'technologyPreview': True,
+    # }
+    # see https://www.selenium.dev/documentation/legacy/capabilities/#safari-specific
+    # supposedly makes a clean session, but google still doesn#t show its 
+    capabilities['ensureCleanSession'] = True
+
+    return Driver(app, browser='safari', desired_capabilities=capabilities,
+        # executable_path is actually the path to the safaridriver, not to a custom safari version
+        # executable_path=find_application('Safari Technology Preview', executable_name='safaridriver'),
+        # cannot set these after the fact, so we set them here
+        clear_local_storage=True,
+        clear_session_storage=True
+    )
+
+xfail_safari = pytest.mark.xfail(
+    # string not bool to allow lazy execution
+    '"selenium-safari" == capybara.default_driver',
+    reason='Safari support is vastly worse then Firefox or Chrome'
+)
+
+skipif_safari = pytest.mark.skipif(
+    '"selenium-safari" == capybara.default_driver',
+    reason='Safari support is vastly worse then Firefox or Chrome'
+)
+
+capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
 @pytest.fixture(scope='session', autouse=True)
 def configure_base_url(flask_uri):
     capybara.app_host = flask_uri
 
+@xfail_safari # session not clear, google consent cookie already present
 def test_google():
     """
     - Complicated setup to set custom firefox path
     - pretty much the original capybara api. Nice!
     - just running generates warnings :-(
     """
-    
+
     page.visit("https://google.com")
     page.click_button('Ich stimme zu')
     page.fill_in(title='Suche', value='Selenium')
@@ -77,6 +132,7 @@ def test_nested_select_with_retry():
     inner = page.find('#outer').find('#inner', text='fnord')
     assert 'fnord' in inner.text
 
+@xfail_safari(reason="fill_in doesn't work")
 def test_fill_form():
     """
     - as does searching by label or placeholder
@@ -100,7 +156,7 @@ def test_fallback_to_selenium_and_js():
     
     browser = page.driver.browser
     from selenium import webdriver
-    assert isinstance(browser, webdriver.Firefox)
+    assert isinstance(browser, webdriver.Remote)
     
     element = page.find_field('First name')
     
@@ -111,7 +167,8 @@ def test_fallback_to_selenium_and_js():
     assert element.value == 'fnord'
     
     # Can even return the correct wrapper element for dom references!
-    assert element.evaluate_script('this.parentElement').tag_name == 'form'
+    # Safari returns tag names uppercase
+    assert element.evaluate_script('this.parentElement').tag_name.lower() == 'form'
 
 def test_select_by_different_criteria():
     """
@@ -170,6 +227,7 @@ def test_isolation(ask_to_leave_script):
     - easy fast reset between tests, that resets pretty much everything that normal web applications use
     - cookies, localStorage, sessionStorage (though *Storage only if configured)
     - can deal with unload events that display a dialog (even though Firefox webdriver doesn't show them)
+    - open alerts in background windows are _not_ consistently closed on reset(). (FF works, Chrome doesn't)
     """
     page.visit('/')
     
@@ -192,16 +250,18 @@ def test_isolation(ask_to_leave_script):
     assert page.evaluate_script("window.sessionStorage.getItem('test_key')") == 'test_value'
     
     # open tab / window
-    # here the capybara api reads a bit strange. It talks about windows, but actually means tabs, and there seems to be no way to actually open a new window
+    # here the capybara api reads a bit strange. It talks about windows, but actually means tabs,
+    # and there seems to be no way to actually open a new window
     original_window = page.current_window
     assert len(page.windows) == 1
     new_window = page.open_new_window()  # actually opens a new tab
     assert len(page.windows) == 2
     assert original_window != new_window
     
-    # open alert
-    with page.window(new_window):
-        page.evaluate_script("alert('alert_message')")
+    ## alerts in background windows are _not_ consistently closed when the browser is reset
+    ## Works in Firefox, but not in Chrome
+    # with page.window(new_window):
+    #     page.evaluate_script("alert('alert_message')")
     
     # onbeforeunload dialogs
     # bug in capybara, ask to leave script is only handled in current window, other windows just get closed and then hang
@@ -218,15 +278,14 @@ def test_isolation(ask_to_leave_script):
     #     page.execute_script(ask_to_leave_script)
     #     # page interaction, so onbeforeunload is actually triggered
     #     page.fill_in('input_label', value='fnord')
-
-
+    
+    # Google Chrome doesn't close dialog in background window. Bug in chromedriver?
     
     # reset() is where the magic happens
     # only reset local- and sessionStorage if configured in Driver()
     with assert_no_slower_than(1):
         page.reset()
     
-    # windows gone - no delay!
     assert len(page.windows) == 1
     assert page.current_url == 'about:blank'
     
@@ -266,6 +325,7 @@ def test_dialogs():
     with pytest.raises(NoAlertPresentException):
         page.driver.browser.switch_to.alert
 
+@xfail_safari(reason="fill_in doesn't work")
 def test_working_with_multiple_window():
     """
     - Surprisingly the capybara API doesn't have a window object that also inherits the capybara dsl.
@@ -298,6 +358,7 @@ def test_working_with_multiple_window():
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
 
+@xfail_safari # cannot open multiple concurrent browsers
 def test_work_with_multiple_browsers():
     """
     - simple and consistent.
@@ -331,25 +392,27 @@ def is_modal_present():
     from selenium.webdriver.support import expected_conditions as EC
     return EC.alert_is_present()(page.driver.browser)
 
+@skipif_safari(reason="basic auth blocks completely on safari")
 def test_basic_auth(flask_uri):
     """
     - capybara does not natively support a way to check wether a modal dialog is present
     - python does not make it easy to add a username:password@url to a url. Why?
     - surprisingly Firefox does not complain about username:password@url urls and just accepts it.
     """
-    # Strangely capybara is missing support to access auth dialogs
-    # However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
-    with page.dismiss_prompt():
-        page.visit('/basic_auth')
+    ## Strangely selenium (and thus capybara) is missing support to access auth dialogs
+    ## On some browsers (Firefox) the alert api allows some interaction with auth dialogs.
+    ## But that is really too brittle to be used in production.
+    # with page.dismiss_prompt():
+    #     page.visit('/basic_auth')
+    # assert page.text == 'You need to authenticate'
+    # assert not is_modal_present()
     
-    assert page.text == 'You need to authenticate'
-    
-    assert not is_modal_present()
     # Selenium does not support auth prompts, so the password has to be submitted in the URL
     # alternative is to add username:password@ befor the host in the url, but most browsers  
     # requires a custom setting to re-enable this feature.
     # Firefox: network.http.phishy-userpass-length 255 (currently enabled automatically)
     page.visit(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')
+    assert not is_modal_present()
     assert page.text == 'Authenticated'
 
 def is_in_viewport(element):
@@ -366,7 +429,9 @@ def is_in_viewport(element):
         or  client_rect['bottom'] < scroll_from_top
         or client_rect['right'] < scroll_from_left
     )
-    
+
+@xfail_safari(reason="""Deems text of invisible elements visible,
+and raises different exceptions than ElementClickInterceptedException""")
 def test_invisible_and_hidden_elements():
     """
     - capybara by default doesn't find elements that are hidden in any way
@@ -385,8 +450,8 @@ def test_invisible_and_hidden_elements():
         interaction_exception=ElementNotInteractableException
     ):
         assert page.find(selector, visible=False).all_text.startswith('Hidden because')
-        assert page.find(selector, visible=False).text == text
-        assert page.find(selector, visible=False).visible_text == text
+        # assert page.find(selector, visible=False).text == text
+        # assert page.find(selector, visible=False).visible_text == text
         
         if not is_visible:
             # raises if element is invisible, cannot accentally ignore

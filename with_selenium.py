@@ -133,9 +133,9 @@ def test_fill_form(browser, flask_uri):
     browser.find_element(*by_label("Last name")).send_keys('Häcker')
     browser.find_element(By.CSS_SELECTOR, '[placeholder="your@email"]').send_keys('foo@bar.org')
     
-    assert 'Martin' == browser.find_element_by_id('first_name').get_attribute('value')
-    assert 'Häcker' == browser.find_element_by_id('last_name').get_attribute('value')
-    assert 'foo@bar.org' == browser.find_element_by_id('email').get_attribute('value')
+    assert 'Martin' == browser.find_element(By.ID, 'first_name').get_attribute('value')
+    assert 'Häcker' == browser.find_element(By.ID, 'last_name').get_attribute('value')
+    assert 'foo@bar.org' == browser.find_element(By.ID, 'email').get_attribute('value')
 
 def test_fallback_to_selenium_and_js(browser, flask_uri):
     """

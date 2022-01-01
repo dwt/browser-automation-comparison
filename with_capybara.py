@@ -36,7 +36,7 @@ def init_chrome(app):
     """
     - Mostly behaves very similar to firefox
     - a bit less well supported (alerts in background, access to basic auth dialogs)
-    - noticable faster
+    - a bit faster
     """
     options = webdriver.ChromeOptions()
     options.binary_location = find_application('Google Chrome')
@@ -55,6 +55,8 @@ def init_safari(app):
     - does not (easily?) support creating a custom testing profile, 
       so normal plugins, bookmarks, cookies, saved passwords etc. can interfere
     - not possible to switch to Safari Technology Preview
+    - headless mode not supported
+    - often takes a really long break (5+ seconds) before a test starts
     """
     
     return Driver(app, browser='safari',
@@ -279,6 +281,7 @@ def test_dialogs(ask_to_leave_script):
     """
     - Surprisingly there is no way to check wether any js alert is visible
     - Selenium is not nice, but at least it provides a fallback
+    - Why is there no API to procedurally interact with dialogs?
     """
     page.visit('/')
     # accepting or dismissing an anticipated alert ist simple

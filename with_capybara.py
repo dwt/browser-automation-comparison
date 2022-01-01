@@ -97,8 +97,6 @@ def test_google():
     
     assert len(page.find_all('.g')) >= 10
     assert page.has_selector('.g', text='Selenium automates browsers')
-    
-    capybara.reset_sessions()
 
 def test_nested_select_with_retry():
     """

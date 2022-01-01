@@ -11,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.alert import Alert
 
-from conftest import find_firefox, assert_is_png, add_auth_to_uri
+from conftest import find_application, assert_is_png, add_auth_to_uri
 
 import pytest
 
@@ -20,9 +20,8 @@ HEADLESS = False
 
 WAIT = 2
 
-@pytest.fixture
-def browser():
-    options = webdriver.firefox.options.Options()
+def firefox():
+    options = webdriver.FirefoxOptions()
     options.headless = HEADLESS
     # required or marionette will not allow them
     options.set_preference("dom.disable_beforeunload", False)
@@ -30,8 +29,34 @@ def browser():
     # http://kb.mozillazine.org/Network.http.phishy-userpass-length
     # currently set automatically
     # options.set_preference('network.http.phishy-userpass-length', 255)
+    options.binary_location = find_application('Firefox')
+    
+    return webdriver.Firefox(options=options)
 
-    browser = webdriver.Firefox(options=options, firefox_binary=find_firefox())
+def chrome():
+    options = webdriver.ChromeOptions()
+    options.binary_location = find_application('Google Chrome')
+    options.headless = HEADLESS
+    
+    return webdriver.Chrome(options=options)
+    
+def safari():
+    """
+    - no headless support
+    - strange differences
+        - returns uppercase tag names
+    - can be really slow to start
+    """
+    return webdriver.Safari()
+
+@pytest.fixture
+def browser(browser_vendor):
+    browsers = dict(
+        firefox=firefox,
+        chrome=chrome,
+        safari=safari,
+    )
+    browser = browsers[browser_vendor]()
     browser.implicitly_wait(WAIT)
     yield browser
     browser.quit()

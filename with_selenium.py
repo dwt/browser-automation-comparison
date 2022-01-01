@@ -298,16 +298,17 @@ def test_basic_auth(browser, flask_uri):
     - Selenium doesn't support basic auth dialogs natively
     - but user:pass@uri does work well enough
     """
-    # Strangely capybara is missing support to access auth dialogs
-    # However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
-    browser.get(flask_uri + '/basic_auth')
-    
-    # easy to dismiss auth alert
-    browser.switch_to.alert.dismiss()
-    text = browser.find_element(By.XPATH, '//body').text
-    assert text == 'You need to authenticate'
-    
-    assert not is_modal_present(browser)
+    ## Strangely selenium is missing support to access auth dialogs
+    ## However, the api for alerts, prompts and cofirms can at least be used to get rid of the dialog
+    ## Firefox can at least close the dialog, but chrome and webkit are helpless
+    ## That means it is not possible to test what happens if basic auth fails
+    ## which is usually not a problem.
+    # browser.get(flask_uri + '/basic_auth')
+    # # easy to dismiss auth alert
+    # browser.switch_to.alert.dismiss()
+    # text = browser.find_element(By.XPATH, '//body').text
+    # assert text == 'You need to authenticate'
+    # assert not is_modal_present(browser)
     
     # In the past it was possible to authenticate like this
     # browser.get(flask_uri + '/basic_auth')

@@ -8,6 +8,7 @@ from capybara.dsl import page
 from capybara.selenium.driver import Driver
 from selenium import webdriver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
+from selenium.webdriver.common.alert import Alert
 
 from conftest import assert_is_png, assert_no_slower_than, find_application, add_auth_to_uri
 import pytest
@@ -302,6 +303,16 @@ def test_dialogs(ask_to_leave_script):
     from selenium.common.exceptions import NoAlertPresentException
     with pytest.raises(NoAlertPresentException):
         page.driver.browser.switch_to.alert
+    
+    page.execute_script(ask_to_leave_script)
+    page.fill_in("input_label", value='fnord')
+    page.visit('/')
+    # safari autocloses / doesn't show the beforeunload dialog
+    # capybara is missing an API to procedurally interact with / close modals. Quite annoying.
+    assert isinstance(EC.alert_is_present()(page.driver.browser), Alert)
+    page.driver._find_modal().accept()
+    assert EC.alert_is_present()(page.driver.browser) is False
+
 
 @pytest.mark.xfail_safari(reason="fill_in doesn't work")
 def test_working_with_multiple_window():

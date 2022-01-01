@@ -6,9 +6,10 @@ import re
 import capybara
 from capybara.dsl import page
 from capybara.selenium.driver import Driver
+from selenium import webdriver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 
-from conftest import assert_is_png, assert_no_slower_than, find_firefox, find_application, find_chrome, add_auth_to_uri
+from conftest import assert_is_png, assert_no_slower_than, find_application, add_auth_to_uri
 import pytest
 
 HEADLESS = True
@@ -16,9 +17,8 @@ HEADLESS = False
 
 @capybara.register_driver("selenium-firefox")
 def init_firefox(app):
-    from selenium.webdriver.firefox.options import Options
-    options = Options()
-    options.binary_location = find_firefox()
+    options = webdriver.FirefoxOptions()
+    options.binary_location = find_application('Firefox')
     options.headless = HEADLESS
     # otherwise marionette automatically disables beforeunload event handling
     # still requires interaction to trigger
@@ -37,9 +37,8 @@ def init_chrome(app):
     - a bit less well supported (alerts in background, access to basic auth dialogs)
     - noticable faster
     """
-    from selenium.webdriver.chrome.options import Options
-    options = Options()
-    options.binary_location = find_chrome()
+    options = webdriver.ChromeOptions()
+    options.binary_location = find_application('Google Chrome')
     options.headless = HEADLESS
     
     return Driver(app, browser="chrome", options=options,

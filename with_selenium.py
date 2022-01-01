@@ -144,7 +144,8 @@ def test_fallback_to_selenium_and_js(browser, flask_uri):
     browser.get(flask_uri + '/form')
     element = browser.find_element(*by_label("First name"))
     parent_element = browser.execute_script('return arguments[0].parentElement', element)
-    assert parent_element.tag_name == 'form'
+    # safari returns uppercase tag names
+    assert parent_element.tag_name.lower() == 'form'
 
 def test_select_by_different_criteria(browser, flask_uri, xpath):
     """

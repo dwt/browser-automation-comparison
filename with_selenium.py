@@ -76,6 +76,7 @@ def test_google(browser):
     - can auto wait
     - increadibly basic selector support, no support for compound stuff (class + text) out of the box
     - quite verbose…
+    - need an explicit wait or test heisenbugs if google is slow
     """
     
     browser.get('http://google.com/')

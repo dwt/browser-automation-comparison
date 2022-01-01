@@ -64,17 +64,6 @@ def init_safari(app):
         clear_session_storage=True
     )
 
-xfail_safari = pytest.mark.xfail(
-    # string not bool to allow lazy execution
-    '"selenium-safari" == capybara.default_driver',
-    reason='Safari support is vastly worse then Firefox or Chrome'
-)
-
-skipif_safari = pytest.mark.skipif(
-    '"selenium-safari" == capybara.default_driver',
-    reason='Safari support is vastly worse then Firefox or Chrome'
-)
-
 capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
@@ -87,7 +76,7 @@ def configure_driver(browser_vendor):
 def configure_base_url(flask_uri):
     capybara.app_host = flask_uri
 
-@xfail_safari # session not clear, google consent cookie already present
+@pytest.mark.xfail_safari(reason='session not clear, google consent cookie already present')
 def test_google():
     """
     - Complicated setup to set custom firefox path
@@ -120,7 +109,7 @@ def test_nested_select_with_retry():
     inner = page.find('#outer').find('#inner', text='fnord')
     assert 'fnord' in inner.text
 
-@xfail_safari(reason="fill_in doesn't work")
+@pytest.mark.xfail_safari(reason="fill_in doesn't work")
 def test_fill_form():
     """
     - as does searching by label or placeholder
@@ -286,7 +275,8 @@ def test_isolation(ask_to_leave_script):
     assert page.evaluate_script("window.localStorage.length") == 0
     assert page.evaluate_script("window.sessionStorage.length") == 0
 
-def test_dialogs():
+@pytest.mark.xfail_safari(reason="Safari doesn't support beforeunload")
+def test_dialogs(ask_to_leave_script):
     """
     - Surprisingly there is no way to check wether any js alert is visible
     - Selenium is not nice, but at least it provides a fallback
@@ -313,7 +303,7 @@ def test_dialogs():
     with pytest.raises(NoAlertPresentException):
         page.driver.browser.switch_to.alert
 
-@xfail_safari(reason="fill_in doesn't work")
+@pytest.mark.xfail_safari(reason="fill_in doesn't work")
 def test_working_with_multiple_window():
     """
     - Surprisingly the capybara API doesn't have a window object that also inherits the capybara dsl.
@@ -346,7 +336,7 @@ def test_working_with_multiple_window():
     # now the API interacts with that window
     assert page.find_field('input_label').value == 'third window'
 
-@xfail_safari # cannot open multiple concurrent browsers
+@pytest.mark.xfail_safari(reason='cannot open multiple concurrent browsers')
 def test_work_with_multiple_browsers():
     """
     - simple and consistent.
@@ -380,7 +370,7 @@ def is_modal_present():
     from selenium.webdriver.support import expected_conditions as EC
     return EC.alert_is_present()(page.driver.browser)
 
-@skipif_safari(reason="basic auth blocks completely on safari")
+@pytest.mark.skipif_safari(reason="basic auth not supported at all on safari")
 def test_basic_auth(flask_uri):
     """
     - capybara does not natively support a way to check wether a modal dialog is present
@@ -418,7 +408,7 @@ def is_in_viewport(element):
         or client_rect['right'] < scroll_from_left
     )
 
-@xfail_safari(reason="""Deems text of invisible elements visible,
+@pytest.mark.xfail_safari(reason="""Deems text of invisible elements visible,
 and raises different exceptions than ElementClickInterceptedException""")
 def test_invisible_and_hidden_elements():
     """

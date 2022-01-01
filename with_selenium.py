@@ -203,6 +203,7 @@ def test_isolation(browser, flask_uri, ask_to_leave_script):
     - Effective, if brute force. Also really slow. :-/
     """
 
+@pytest.mark.xfail_safari(reason='beforeunload not supported')
 def test_dialogs(browser, flask_uri, ask_to_leave_script):
     """
     - surprisingly easy nice api to work with alerts
@@ -268,6 +269,7 @@ def test_working_with_multiple_window(browser, flask_uri):
     
     assert browser.find_element(*by_label('input_label')).get_attribute('value') == 'first window'
 
+@pytest.mark.skipif_safari(reason='does not support multiple open browsers')
 def test_work_with_multiple_browsers(browser, browser2, flask_uri):
     """
     - fairly straight forward, just create a second browser and go
@@ -290,6 +292,7 @@ def test_work_with_multiple_browsers(browser, browser2, flask_uri):
 def is_modal_present(browser):
     return EC.alert_is_present()(browser)
 
+@pytest.mark.skipif_safari(reason="does not support basic auth at all")
 def test_basic_auth(browser, flask_uri):
     """
     - Selenium doesn't support basic auth dialogs natively
@@ -342,6 +345,7 @@ def using_wait_time(browser, wait_time):
     finally:
         browser.implicitly_wait(WAIT)
 
+@pytest.mark.xfail_safari(reason='invisible content is deemed visible')
 def test_invisible_and_hidden_elements(flask_uri, browser):
     """
     - cannot set / reduce implicit wait time via context manager

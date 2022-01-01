@@ -100,8 +100,10 @@ def assert_no_slower_than(seconds=1):
     after = datetime.now()
     assert (after - before).total_seconds() < seconds
 
+## pytest customization to add multi browser support
+
 def pytest_addoption(parser):
-    parser.addoption("--browser", default='all', help="run all combinations")
+    parser.addoption("--browser", default='all', help="one of: all, firefox, chrome, safari")
 
 def pytest_generate_tests(metafunc):
     if "browser_vendor" in metafunc.fixturenames:
@@ -110,3 +112,23 @@ def pytest_generate_tests(metafunc):
             browser_vendor = ['firefox', 'chrome', 'safari']
         metafunc.parametrize("browser_vendor", browser_vendor)
 
+# xfail or skipif don't have access to fixture arguments
+# also skipif is evaluated before the fixture, which means the side effect of the fixture cannot be used
+# Thus special implementation is needed to graft this functionality on top of pytest
+# inspired by https://stackoverflow.com/questions/28179026/how-to-skip-a-pytest-using-an-external-fixture
+# This has the unfortunate side effect of forcing each test to be parametrized by browser vendor. 
+# Not a problem if that is required / wanted anyway, but not super nice.
+@pytest.fixture(autouse=True)
+def skip_or_xfail_safari(request, browser_vendor):
+    if 'safari' != browser_vendor:
+        return
+    
+    def reason(marker_name):
+        return request.node.get_closest_marker(marker_name).kwargs['reason']
+    
+    if request.node.get_closest_marker('xfail_safari'):
+        # add a normal xfail marker, to allow the test to execute
+        request.node.add_marker(pytest.mark.xfail(reason=reason('xfail_safari')))
+        
+    if request.node.get_closest_marker('skipif_safari'):
+        return pytest.skip(msg=reason('skipif_safari'))

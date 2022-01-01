@@ -7,9 +7,9 @@ import capybara
 from capybara.dsl import page
 from capybara.selenium.driver import Driver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
-import pytest
 
 from conftest import assert_is_png, assert_no_slower_than, find_firefox, find_application, find_chrome, add_auth_to_uri
+import pytest
 
 HEADLESS = True
 HEADLESS = False

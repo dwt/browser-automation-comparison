@@ -63,6 +63,14 @@ def browser(browser_vendor):
 
 browser2 = browser
 
+def until(driver, condition, wait=WAIT):
+    driver.implicitly_wait(0)
+    try:
+        return WebDriverWait(driver, wait).until(condition)
+    finally:
+        driver.implicitly_wait(WAIT)
+
+@pytest.mark.xfail_safari(reason="Safari doesn't isolate the test session with it's own profile, thus the google cookie interferes")
 def test_google(browser):
     """
     - can auto wait
@@ -77,17 +85,13 @@ def test_google(browser):
     search_field = browser.find_element(By.CSS_SELECTOR, '[title="Suche"]')
     search_field.send_keys('Selenium' + Keys.RETURN)
     
+    # Need explicit wait, or the next assertion fires before the page has finished loading
+    until(browser, EC.presence_of_element_located((By.CLASS_NAME, 'g')))
+    
     assert len(browser.find_elements(By.CSS_SELECTOR, '.g')) >= 10
     
     first = browser.find_element(By.CSS_SELECTOR, '.g') # first, note missing 's'
     assert 'Selenium automates browsers' in first.text
-
-def until(driver, condition, wait=WAIT):
-    driver.implicitly_wait(0)
-    try:
-        return WebDriverWait(driver, wait).until(condition)
-    finally:
-        driver.implicitly_wait(WAIT)
 
 class NestedSearch(object):
     

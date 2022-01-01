@@ -6,7 +6,6 @@ import re
 import capybara
 from capybara.dsl import page
 from capybara.selenium.driver import Driver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 import pytest
 
@@ -25,10 +24,7 @@ def init_firefox(app):
     # still requires interaction to trigger
     options.set_preference("dom.disable_beforeunload", False)
     
-    capabilities = DesiredCapabilities.FIREFOX.copy()
-    capabilities["marionette"] = True
-    
-    return Driver(app, browser="firefox", options=options, desired_capabilities=capabilities,
+    return Driver(app, browser="firefox", options=options,
         # cannot set these after the fact, so we set them here
         clear_local_storage=True,
         clear_session_storage=True,
@@ -46,10 +42,7 @@ def init_chrome(app):
     options.binary_location = find_chrome()
     options.headless = HEADLESS
     
-    capabilities = DesiredCapabilities.CHROME.copy()
-    # capabilities["marionette"] = True
-
-    return Driver(app, browser="chrome", options=options, desired_capabilities=capabilities,
+    return Driver(app, browser="chrome", options=options,
         # cannot set these after the fact, so we set them here
         clear_local_storage=True,
         clear_session_storage=True,
@@ -63,17 +56,8 @@ def init_safari(app):
       so normal plugins, bookmarks, cookies, saved passwords etc. can interfere
     - not possible to switch to Safari Technology Preview
     """
-    # headless mode not supported, and since it's only supported on mac, custom path is also not neccessary
-    capabilities = DesiredCapabilities.SAFARI.copy()
-    # supposedly this asllow switching to technologyPreview, but doesn't seem to work
-    # capabilities["safari.options"] = {
-    #     'technologyPreview': True,
-    # }
-    # see https://www.selenium.dev/documentation/legacy/capabilities/#safari-specific
-    # supposedly makes a clean session, but google still doesn#t show its 
-    capabilities['ensureCleanSession'] = True
-
-    return Driver(app, browser='safari', desired_capabilities=capabilities,
+    
+    return Driver(app, browser='safari',
         # executable_path is actually the path to the safaridriver, not to a custom safari version
         # executable_path=find_application('Safari Technology Preview', executable_name='safaridriver'),
         # cannot set these after the fact, so we set them here

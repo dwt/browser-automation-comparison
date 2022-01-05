@@ -54,7 +54,7 @@ def test_google(page):
     page.wait_for_load_state("networkidle")  # wtf is this neccessary?
     assert len(page.query_selector_all('.g')) >= 9
     content = page.text_content('css=.g:first-child')
-    assert 'Playwright enables reliable end-to-end testing for modern web apps' in content
+    assert 'Playwright: Fast and reliable end-to-end testing for modern' in content
 
 def test_nested_select_with_retry(page, flask_uri):
     """

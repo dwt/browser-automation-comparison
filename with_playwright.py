@@ -336,18 +336,20 @@ def test_working_with_multiple_window(page, context, flask_uri):
 def test_work_with_multiple_browsers(page, browser, flask_uri):
     """
     - simple isolation with explicit objects representing the browsers
+    - really likes to deadlock / hang with multiple browser on programming errors
     """
     page.goto(flask_uri)
-    page.fill_in('input_label', value='first browser')
+    page.fill('text=input_label', value='first browser')
     
     # equivalent to second browser, as we get guaranteed isolation
     page2 = browser.new_context().new_page()
-    page2.fill_in('input_label', value='first browser')
+    page2.goto(flask_uri)
+    page2.fill('text=input_label', value='second browser')
     
-    assert page.find_field('input_label').value == 'first window'
-    assert page2.find_field('input_label').value == 'first window'
+    assert page.input_value('#input_id') == 'first browser'
+    assert page2.input_value('#input_id') == 'second browser'
 
-def test_basic_auth(page, flask_uri):
+def test_basic_auth(page, browser, flask_uri):
     """
     - basic auth in url works
     - basic auth in context works

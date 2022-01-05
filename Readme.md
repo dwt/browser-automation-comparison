@@ -15,7 +15,8 @@ Current means late 2021, thats when I last looked intensively at this.
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
-    pytest with_*
+    python -m playwright install
+    pytest
 
 ## Use cases cosvered
 

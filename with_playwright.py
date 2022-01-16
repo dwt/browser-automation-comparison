@@ -343,15 +343,16 @@ def test_work_with_multiple_browsers(page, flask_uri, browser):
     assert page.input_value('#input_id') == 'first browser'
     assert page2.input_value('#input_id') == 'second browser'
 
-def test_basic_auth(page, browser, flask_uri):
+def test_basic_auth(page, browser, flask_uri, browser_vendor):
     """
     - basic auth in url works
     - basic auth in context works
     """
-    # Strangely the authentication dialog is not shown at all
-    page.goto(flask_uri + '/basic_auth')
-    
-    assert page.inner_text('body') == 'You need to authenticate'
+    # in FF and WebKit the authentication dialog is not shown at all
+    # Chrome raises net::ERR_INVALID_AUTH_CREDENTIALS and doesn't seem to allow to access the error message at all.
+    if 'chrome' != browser_vendor:
+        page.goto('/basic_auth')
+        assert page.inner_text('body') == 'You need to authenticate'
     
     # Even though this is not documented, it works fine
     page.goto(add_auth_to_uri(flask_uri, 'admin', 'password') + '/basic_auth')

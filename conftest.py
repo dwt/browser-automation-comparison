@@ -110,7 +110,7 @@ def pytest_generate_tests(metafunc):
         browser_vendor = [metafunc.config.getoption("browser")]
         if ['all'] == browser_vendor:
             browser_vendor = ['firefox', 'chrome', 'safari']
-        metafunc.parametrize("browser_vendor", browser_vendor)
+        metafunc.parametrize("browser_vendor", browser_vendor, scope='session')
 
 # xfail or skipif don't have access to fixture arguments
 # also skipif is evaluated before the fixture, which means the side effect of the fixture cannot be used

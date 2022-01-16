@@ -7,7 +7,8 @@
 
 
 from contextlib import contextmanager
-from playwright.sync_api import PdfMargins, sync_playwright, TimeoutError
+
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 import pytest
 
@@ -20,9 +21,9 @@ WAIT = 5000
 
 @pytest.fixture(scope='session')
 def browser(browser_vendor):
-    with sync_playwright() as playwright:
+    with sync_playwright() as sync_api:
         browser_name_mapping = dict(chrome='chromium', firefox='firefox', safari='webkit')
-        browser = getattr(playwright, browser_name_mapping[browser_vendor])
+        browser = getattr(sync_api, browser_name_mapping[browser_vendor])
         instance = browser.launch(headless=HEADLESS)
         yield instance
         instance.close()
@@ -422,7 +423,7 @@ def test_invisible_and_hidden_elements(flask_uri, page):
         assert find(selector).text_content().startswith('Hidden because')
         
         # raises while trying to wait for elements to be visible, enabled and stable
-        with pytest.raises(TimeoutError):
+        with pytest.raises(PlaywrightTimeoutError):
             find(selector).click()
     
     # no support to get the wait time or set / reduce it via context magager.

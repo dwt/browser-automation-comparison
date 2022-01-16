@@ -85,6 +85,8 @@ Current means late 2021, thats when I last looked intensively at this.
 - help() and repr() output, how helpfull is it?, how discoverable is the library interactively?
 - can private browsing mode be accessed?
 - selene library to auto download drivers / browsers
+- test upload, download
+- are console messages in scope?
 
 ## Further work
 

@@ -306,33 +306,25 @@ def test_dialogs(page, flask_uri):
     # Selenium at least has browser.switch_to.alert - but here, nothing?
 
 def test_working_with_multiple_window(page, context, flask_uri):
+    """
+    - raising unexpected exceptions in page.expect_popup() hangs the test
+    """
     page.goto(flask_uri)
     page.fill('text=input_label', value='first window')
     
-    # multiple windows
-    with page.expect_popup() as popup:
-        second_page = context.new_page()
-        second_page.goto(flask_uri)
-        second_page.fill_in('input_label', value='second window')
-        assert page.find_field('input_label').value == 'second window'
-        # it's a bit strange that the page is a proxy to the /current page/ that is not explicit in the capybara api
+    # multiple windows are explicitly and simply represented as objects
+    second_page = context.new_page()
+    second_page.goto(flask_uri)
+    second_page.fill('text=input_label', value='second window')
+    assert second_page.input_value('#input_id') == 'second window'
+    assert page.input_value('#input_id') == 'first window'
     
-    assert page.find_field('input_label').value == 'first window'
-    
-    # What is really simple though is getting a window reference to a window that is opened by the page (e.g. a click or js)
-    window = page.window_opened_by(lambda: page.open_new_window())
-    # that window is actually an object, but the capybara API seems not to be available on it.
-    # instead one has to make it the 'current' window
-    # Either via a context manager
-    with page.window(window):
-        page.visit(flask_uri)
-        page.fill_in('input_label', value='third window')
-    
-    assert page.find_field('input_label').value == 'first window'
-    # or explicitly
-    page.switch_to_window(window)
-    # now the API interacts with that window
-    assert page.find_field('input_label').value == 'third window'
+    # catching windows opened by browser actions
+    with context.expect_page() as new_page_info:
+        page.evaluate('window.open(document.URL, "_blank")')
+    third_page = new_page_info.value
+    third_page.wait_for_load_state()
+    assert third_page.input_value('#input_id') == 'input_value'
 
 def test_work_with_multiple_browsers(page, browser, flask_uri):
     """

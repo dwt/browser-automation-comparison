@@ -30,8 +30,8 @@ def browser(browser_vendor):
 
 # contexts are what guarantees test isolation - every test gets a new one
 @pytest.fixture
-def context(browser):
-    context = browser.new_context()
+def context(browser, flask_uri):
+    context = browser.new_context(base_url=flask_uri)
     yield context
     context.close()
 
@@ -59,21 +59,21 @@ def test_google(page):
     content = page.text_content('css=.g:first-child')
     assert 'Playwright: Fast and reliable end-to-end testing for modern' in content
 
-def test_nested_select_with_retry(page, flask_uri):
+def test_nested_select_with_retry(page):
     """
     - complex assertionss are possible, but quite cumbersome through complex css or xpath
     """
-    page.goto(flask_uri + '/dynamic_disclose')
+    page.goto('/dynamic_disclose')
     page.click('text=Trigger')
     inner = page.wait_for_selector('css=#outer >> css=#inner:has-text("fnord")')
     assert 'fnord' in inner.text_content()
 
-def test_fill_form(page, flask_uri):
+def test_fill_form(page):
     """
     - placeholder not supported for text selector - why?
     - input_value behaves differently with text= selector engine
     """
-    page.goto(flask_uri + '/form')
+    page.goto('/form')
     page.fill('text=First name', 'Martin')
     page.fill('text=Last name', 'Häcker')
     page.fill('[placeholder="your@email"]', 'foo@bar.org')
@@ -83,12 +83,12 @@ def test_fill_form(page, flask_uri):
     assert 'Häcker' == page.input_value('#last_name')
     assert 'foo@bar.org' == page.input_value('#email')
 
-def test_fallback_to_selenium_and_js(page, flask_uri):
+def test_fallback_to_selenium_and_js(page):
     """
     - What does escaping even mean here? Is there a lower level?
     """
     
-    page.goto(flask_uri + '/form')
+    page.goto('/form')
     element = page.query_selector('text=First name')
     
     assert element.evaluate('1+1') == 2
@@ -100,7 +100,7 @@ def test_fallback_to_selenium_and_js(page, flask_uri):
     # js element selection is possible, but complicated
     assert element.evaluate_handle('e => e.parentElement').get_property('tagName').json_value() == 'FORM'
 
-def test_select_by_different_criteria(page, flask_uri, xpath):
+def test_select_by_different_criteria(page, xpath):
     """
     - `page.query_selector()` does _not_ autowait, `page.wait_for_selector()` does that instead
     - The different methods accept a common set of arguments to query for stuff, but can interpret it quite 
@@ -109,7 +109,7 @@ def test_select_by_different_criteria(page, flask_uri, xpath):
     - Much more low level, cannot specify freely what I'm searching, everything has to be very explicit _all_ the time
     - xpath selector library integration works ok
     """
-    page.goto(flask_uri + '/selector_playground')
+    page.goto('/selector_playground')
     
     # Can't locate input this way, even though it works for page.fill()
     assert page.query_selector('text=input_label').get_attribute('id') == 'label'
@@ -151,7 +151,7 @@ def test_debugging_support(page, flask_uri, tmp_path):
     - tracing API that contains screenshots of every step of the test execution, 
       a har file and a full playwright trace. And it can be opened in a playwright viewer! Oh my.
     """
-    page.goto(flask_uri + '/selector_playground')
+    page.goto('/selector_playground')
     field = page.query_selector('input')
     
     # get html of page
@@ -173,10 +173,10 @@ def test_debugging_support(page, flask_uri, tmp_path):
     video_dir = tmp_path / 'videos'
     har_path = tmp_path / 'recorded.har'
     trace_path = tmp_path / 'trace.zip'
-    context = browser.new_context(record_video_dir=video_dir, record_har_path=har_path)
+    context = browser.new_context(record_video_dir=video_dir, record_har_path=har_path, base_url=flask_uri)
     context.tracing.start(screenshots=True, snapshots=True)
     page = context.new_page()
-    page.goto(flask_uri + '/selector_playground')
+    page.goto('/selector_playground')
     page.fill('text=input_label', 'fnord')
     context.tracing.stop(path=trace_path)
     context.close() # save video and har files
@@ -202,10 +202,9 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     - each test is supposed to get a new context, but share the browser (so that's what I'm emulating here)
         https://playwright.dev/python/docs/browser-contexts
     """
-    page.goto(flask_uri)
+    page.goto('/')
     
     # set cookie
-    # Capybara has no api to deal with cookies -> fallback to selenium
     page.context.add_cookies([dict(
         name='test_cookie', value='test_value', url=flask_uri,
     )])
@@ -230,7 +229,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     assert page != new_page
     
     # open alert
-    new_page.goto(flask_uri)
+    new_page.goto('/')
     # playwright actually doesn't like oepn alerts and auto closes them automatically
     # if that is not wanted, a handler has to be added with page.on('dialog')
     # This way it does stay open
@@ -238,7 +237,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     
     # delay unload
     third_page = context.new_page()
-    third_page.goto(flask_uri)
+    third_page.goto('/')
     third_page.evaluate(ask_to_leave_script)
     # page needs a change otherwise the onbeforeunload doesn't trigger
     third_page.fill('text=input_label', value='fnord')
@@ -254,7 +253,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     third_page.on('dialog', handle_dialog)
     third_page.close(run_before_unload=True)
     # Fails, not sure why that is, the dialog just doesn't show up
-    # assert did_handle_beforeunload
+    assert did_handle_beforeunload
     
     # This is the big reset
     # quite fast!
@@ -268,7 +267,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     assert len(context.pages) == 1
     assert page.url == 'about:blank'
     
-    page.goto(flask_uri)
+    page.goto('/')
     
     # cookies gone
     assert len(context.cookies()) == 0
@@ -277,13 +276,13 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     assert page.evaluate("window.localStorage.length") == 0
     assert page.evaluate("window.sessionStorage.length") == 0
 
-def test_dialogs(page, flask_uri):
+def test_dialogs(page):
     """
     - No way to detect / get at an (already) open dialog
     - not possible to test page leave dialogs? Can't get them to show
     """
     # alerts
-    page.goto(flask_uri)
+    page.goto('/')
     
     # accepting or dismissing an anticipated alert requires a handler
     def handle_dialog(dialog):
@@ -307,16 +306,16 @@ def test_dialogs(page, flask_uri):
     # There seems to be no concept of either detecting them or dealing with them
     # Selenium at least has browser.switch_to.alert - but here, nothing?
 
-def test_working_with_multiple_window(page, context, flask_uri):
+def test_working_with_multiple_window(page, context):
     """
     - raising unexpected exceptions in page.expect_popup() hangs the test
     """
-    page.goto(flask_uri)
+    page.goto('/')
     page.fill('text=input_label', value='first window')
     
     # multiple windows are explicitly and simply represented as objects
     second_page = context.new_page()
-    second_page.goto(flask_uri)
+    second_page.goto('/')
     second_page.fill('text=input_label', value='second window')
     assert second_page.input_value('#input_id') == 'second window'
     assert page.input_value('#input_id') == 'first window'
@@ -328,17 +327,17 @@ def test_working_with_multiple_window(page, context, flask_uri):
     third_page.wait_for_load_state()
     assert third_page.input_value('#input_id') == 'input_value'
 
-def test_work_with_multiple_browsers(page, browser, flask_uri):
+def test_work_with_multiple_browsers(page, flask_uri, browser):
     """
     - simple isolation with explicit objects representing the browsers
     - really likes to deadlock / hang with multiple browser on programming errors
     """
-    page.goto(flask_uri)
+    page.goto('/')
     page.fill('text=input_label', value='first browser')
     
     # equivalent to second browser, as we get guaranteed isolation
-    page2 = browser.new_context().new_page()
-    page2.goto(flask_uri)
+    page2 = browser.new_context(base_url=flask_uri).new_page()
+    page2.goto('/')
     page2.fill('text=input_label', value='second browser')
     
     assert page.input_value('#input_id') == 'first browser'
@@ -364,10 +363,11 @@ def test_basic_auth(page, browser, flask_uri):
     
     # Accoring to the docs this is the recommended way to do basic authentication
     context = browser.new_context(
-        http_credentials={"username": "admin", "password": "password"}
+        http_credentials={"username": "admin", "password": "password"},
+        base_url=flask_uri,
     )
     page = context.new_page()
-    page.goto(flask_uri + '/basic_auth')
+    page.goto('/basic_auth')
     assert page.inner_text('body') == 'Authenticated'
 
 def is_in_viewport(page, element):
@@ -393,7 +393,7 @@ def using_wait_time(page, wait_time):
     finally:
         page.set_default_timeout(WAIT)
 
-def test_invisible_and_hidden_elements(flask_uri, page):
+def test_invisible_and_hidden_elements(page):
     """
     - no utility to temporarily reduce the default timeout
     - timout of 0,1, <50 lead to various surprising errors, because internal checks of interactability cannot complete successfully.
@@ -403,7 +403,7 @@ def test_invisible_and_hidden_elements(flask_uri, page):
     - very sensitive to short timeouts, because scrolling into view doesn't work anymore with very
       short timeouts, even if the element in question is already scrolled into view
     """
-    page.goto(flask_uri + '/hidden')
+    page.goto('/hidden')
     
     # Ensure the page is rendered
     assert page.query_selector('.visible').text_content() == 'Visible because just normal content in the body'

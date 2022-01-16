@@ -19,12 +19,13 @@ HEADLESS = False
 WAIT = 5000
 
 @pytest.fixture(scope='session')
-def browser():
+def browser(browser_vendor):
     with sync_playwright() as playwright:
-        # FIXME needs to launch firefox, chromium or webkit, 
-        browser = playwright.firefox.launch(headless=HEADLESS)
-        yield browser
-        browser.close()
+        browser_name_mapping = dict(chrome='chromium', firefox='firefox', safari='webkit')
+        browser = getattr(playwright, browser_name_mapping[browser_vendor])
+        instance = browser.launch(headless=HEADLESS)
+        yield instance
+        instance.close()
 
 # contexts are what guarantees test isolation - every test gets a new one
 @pytest.fixture
@@ -211,7 +212,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     cookies = page.context.cookies()
     assert len(cookies) == 1
     assert cookies[0]['name'] == 'test_cookie'
-
+    
     # write local storage
     page.evaluate("window.localStorage.setItem('test_key', 'test_value_localstorage')")
     assert page.evaluate("window.localStorage.getItem('test_key')") == 'test_value_localstorage'

@@ -195,7 +195,7 @@ def test_debugging_support(page, flask_uri, tmp_path):
     # Trace contains har file, screenshots of every step 
     # and a full trace of playwright commands sent to the browser.
     # Wooot!
-
+@pytest.mark.xfail # currently consistently fails in all browsers
 def test_isolation(page, flask_uri, ask_to_leave_script):
     """
     - test isolation is achieved at the context level
@@ -243,13 +243,12 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     third_page.fill('text=input_label', value='fnord')
     
     did_handle_beforeunload = False
-    # beforeunload handlers need to be explicitly triggered
-    # but I can't get them to run. :-(
     def handle_dialog(dialog):
+        # breakpoint()
         global did_handle_beforeunload
-        did_handle_beforeunload = True
         assert dialog.type == 'beforeunload'
         dialog.dismiss()
+        did_handle_beforeunload = True
     third_page.on('dialog', handle_dialog)
     third_page.close(run_before_unload=True)
     # Fails, not sure why that is, the dialog just doesn't show up

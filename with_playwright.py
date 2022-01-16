@@ -21,6 +21,7 @@ WAIT = 5000
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as playwright:
+        # FIXME needs to launch firefox, chromium or webkit, 
         browser = playwright.firefox.launch(headless=HEADLESS)
         yield browser
         browser.close()

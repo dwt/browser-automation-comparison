@@ -103,7 +103,7 @@ def assert_no_slower_than(seconds=1):
 ## pytest customization to add multi browser support
 
 def pytest_addoption(parser):
-    parser.addoption("--browser", default='all', help="one of: all, firefox, chrome, safari")
+    parser.addoption("--browser", default='all', choices=('all', 'firefox', 'chrome', 'safari'), help="default: all")
 
 def pytest_generate_tests(metafunc):
     if "browser_vendor" in metafunc.fixturenames:

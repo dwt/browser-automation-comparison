@@ -53,7 +53,7 @@ def test_google(page):
     page.fill('css=[title=Suche]', 'Playwright')  # does not give focus!
     page.click('css=[value="Google Suche"]:visible')  # Not automatically choosing visible elment
     page.wait_for_load_state("networkidle")  # wtf is this neccessary?
-    assert len(page.query_selector_all('.g')) >= 9
+    assert len(page.query_selector_all('.g')) >= 8
     content = page.text_content('css=.g:first-child')
     assert 'Playwright: Fast and reliable end-to-end testing for modern' in content
 

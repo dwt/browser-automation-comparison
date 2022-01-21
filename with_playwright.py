@@ -195,7 +195,7 @@ def test_debugging_support(page, flask_uri, tmp_path):
     # Trace contains har file, screenshots of every step 
     # and a full trace of playwright commands sent to the browser.
     # Wooot!
-@pytest.mark.xfail # currently consistently fails in all browsers
+
 def test_isolation(page, flask_uri, ask_to_leave_script):
     """
     - test isolation is achieved at the context level
@@ -241,18 +241,15 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     third_page.evaluate(ask_to_leave_script)
     # page needs a change otherwise the onbeforeunload doesn't trigger
     third_page.fill('text=input_label', value='fnord')
+    # FF needs to put the focus outside the changed element to trigger the dialog
+    third_page.click('body')
     
-    did_handle_beforeunload = False
-    def handle_dialog(dialog):
-        # breakpoint()
-        global did_handle_beforeunload
-        assert dialog.type == 'beforeunload'
-        dialog.dismiss()
-        did_handle_beforeunload = True
-    third_page.on('dialog', handle_dialog)
-    third_page.close(run_before_unload=True)
-    # Fails, not sure why that is, the dialog just doesn't show up
-    assert did_handle_beforeunload
+    with third_page.expect_event('dialog') as dialog_info:
+        third_page.close(run_before_unload=True)
+    dialog = dialog_info.value
+    assert dialog.type == 'beforeunload'
+    with third_page.expect_event("close"):
+        dialog.accept()
     
     # This is the big reset
     # quite fast!
@@ -266,7 +263,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     assert len(context.pages) == 1
     assert page.url == 'about:blank'
     
-    page.goto('/')
+    page.goto(flask_uri)
     
     # cookies gone
     assert len(context.cookies()) == 0

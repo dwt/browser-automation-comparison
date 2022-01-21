@@ -196,7 +196,7 @@ def test_debugging_support(page, flask_uri, tmp_path):
     # and a full trace of playwright commands sent to the browser.
     # Wooot!
 
-def test_isolation(page, flask_uri, ask_to_leave_script):
+def test_isolation(page, flask_uri, ask_to_leave_script, browser_vendor):
     """
     - test isolation is achieved at the context level
     - each test is supposed to get a new context, but share the browser (so that's what I'm emulating here)
@@ -246,16 +246,21 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     
     with third_page.expect_event('dialog') as dialog_info:
         third_page.close(run_before_unload=True)
-    dialog = dialog_info.value
-    assert dialog.type == 'beforeunload'
-    with third_page.expect_event("close"):
-        dialog.accept()
+    
+    # chrome hangs if the dialog is not closed!
+    # other browsers clean up correctly
+    # see https://github.com/microsoft/playwright-python/issues/1118
+    if 'chrome' == browser_vendor:
+        dialog = dialog_info.value
+        assert dialog.type == 'beforeunload'
+        with third_page.expect_event("close"):
+            dialog.accept()
     
     # This is the big reset
     # quite fast!
     with assert_no_slower_than(1):
         browser = page.context.browser
-        context.close()
+        browser.close()
         context = browser.new_context()
         page = context.new_page()
     
@@ -263,6 +268,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script):
     assert len(context.pages) == 1
     assert page.url == 'about:blank'
     
+    # page is from new context, which doesn't have the flask_uri configured
     page.goto(flask_uri)
     
     # cookies gone

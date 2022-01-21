@@ -97,7 +97,7 @@ def test_google():
     # There are two buttons, though technically only one of them should be visible
     page.click_button('Google Suche', match='first')
     
-    assert len(page.find_all('.g')) >= 10
+    assert len(page.find_all('.g')) >= 9
     assert page.has_selector('.g', text='Selenium automates browsers')
 
 def test_nested_select_with_retry():
@@ -200,7 +200,7 @@ def test_debugging_support(tmp_path):
     page.save_screenshot(path)
     assert_is_png(path)
 
-def test_isolation(ask_to_leave_script):
+def test_isolation(ask_to_leave_script, browser_vendor):
     """
     - easy fast reset between tests, that resets pretty much everything that normal web applications use
     - cookies, localStorage, sessionStorage (though *Storage only if configured)
@@ -242,25 +242,21 @@ def test_isolation(ask_to_leave_script):
     #     page.evaluate_script("alert('alert_message')")
     
     # onbeforeunload dialogs
-    # bug in capybara, ask to leave script is only handled in current window, other windows just get closed and then hang
-    # see https://github.com/elliterate/capybara.py/issues/26
-    # Even though it is handled in the code, that doesn't work for firefox. (?)
-    # page.execute_script(ask_to_leave_script)
+    page.execute_script(ask_to_leave_script)
     # page interaction, so onbeforeunload is actually triggered
-    # page.fill_in('input_label', value='fnord')
+    page.fill_in('input_label', value='fnord')
     
     # bug in capybara: background windows don't even have code to handle dialogs like onbeforeunload
     # see https://github.com/elliterate/capybara.py/issues/26
-    # with page.window(page.open_new_window()):
-    #     page.visit('/')
-    #     page.execute_script(ask_to_leave_script)
-    #     # page interaction, so onbeforeunload is actually triggered
-    #     page.fill_in('input_label', value='fnord')
-    
-    # Google Chrome doesn't close dialog in background window. Bug in chromedriver?
+    if 'firefox' != browser_vendor:
+        with page.window(page.open_new_window()):
+            page.visit('/')
+            page.execute_script(ask_to_leave_script)
+            # page interaction, so onbeforeunload is actually triggered
+            page.fill_in('input_label', value='fnord')
     
     # reset() is where the magic happens
-    # only reset local- and sessionStorage if configured in Driver()
+    # only resets local- and sessionStorage if configured in Driver()
     with assert_no_slower_than(1):
         page.reset()
     

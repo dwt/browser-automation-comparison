@@ -4,6 +4,8 @@ import re
 import atexit
 from subprocess import run
 
+## Locating browsers
+
 def find_firefox():
     return find_application('Firefox')
 
@@ -22,8 +24,10 @@ def find_application(application_name, executable_name=None):
         executable_name = run(extract_command + [info_plist_path], capture_output=True).stdout.decode().splitlines()[0]
     return bundle_path + '/Contents/MacOS/' + executable_name
 
+## Interacting with Flask
+
 @pytest.fixture(scope='session')
-def flask_uri():
+def flask_uri(browser_vendor):
     with subprocess.Popen(['flask', 'run', '--reload'], stderr=subprocess.PIPE, encoding='utf8') as process:
         flask_url = None
         still_starting = True
@@ -40,7 +44,11 @@ def flask_uri():
         
         atexit.register(kill)
         
-        yield flask_url
+        if 'remote' != browser_vendor:
+            yield flask_url
+        else:
+            protocol, host, port = flask_url.split(':')
+            yield ':'.join([protocol, '//host.docker.internal', port])
         
         kill()
 
@@ -61,6 +69,8 @@ def ask_to_leave_script():
             e.returnValue = 'Fnord';
         });
     '''
+
+## Test helpers and assertions
 
 # Selenium style xpath matcher
 @pytest.fixture
@@ -103,7 +113,7 @@ def assert_no_slower_than(seconds=1):
 ## pytest customization to add multi browser support
 
 def pytest_addoption(parser):
-    parser.addoption("--browser", default='all', choices=('all', 'firefox', 'chrome', 'safari'), help="default: all")
+    parser.addoption("--browser", default='all', choices=('all', 'firefox', 'chrome', 'safari', 'remote'), help="default: all")
 
 def pytest_generate_tests(metafunc):
     if "browser_vendor" in metafunc.fixturenames:
@@ -132,3 +142,33 @@ def skip_or_xfail_safari(request, browser_vendor):
         
     if request.node.get_closest_marker('skipif_safari'):
         return pytest.skip(msg=reason('skipif_safari'))
+
+
+@pytest.fixture
+def run_firefox_in_docker_if_using_remote(browser_vendor):
+    if 'remote' != browser_vendor:
+        return
+    
+    import subprocess
+    import requests
+    import time
+    
+    def selenium_grid_is_up():
+        try:
+            return requests.get('http://localhost:4444/wd/hub/status').json()['value']['ready']
+        except requests.ConnectionError:
+            return False
+    
+    def wait_for_selenium_grid():
+        while not selenium_grid_is_up():
+            time.sleep(.2)
+    
+    with subprocess.Popen(['docker', 'compose', 'up', 'firefox']) as docker_compose:
+        wait_for_selenium_grid()
+        try:
+            yield
+        finally:
+            # stopping `docker compose` gracefully via signals doesn't seem to work at all
+            # especially SIGTERM should have worked, as that is what gets sent on ctrl-c
+            subprocess.run(['docker', 'compose', 'stop', 'firefox'])
+    

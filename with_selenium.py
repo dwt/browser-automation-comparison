@@ -23,7 +23,7 @@ WAIT = 2
 def firefox():
     options = webdriver.FirefoxOptions()
     options.headless = HEADLESS
-    # required or marionette will not allow them
+    # required or marionette will not allow beforeunload dialogs
     options.set_preference("dom.disable_beforeunload", False)
     # required to allow username and password in url for basic auth
     # http://kb.mozillazine.org/Network.http.phishy-userpass-length
@@ -49,17 +49,36 @@ def safari():
     """
     return webdriver.Safari()
 
+def remote():
+    """
+    - Run tests in ff,chrome,edge in docker
+    - observe with vnc or browser based vnc
+    - vnc built into selenium grid sucks, because it requires a reconnect for each session, i.e. for each test run
+    - possible to record videos from vnc (sidecar docker container for this is available)
+    - FF and Chrome work well
+    - Surprisingly fast browser restarts
+    """
+    
+    options = webdriver.FirefoxOptions()
+    # required or marionette will not allow beforeunload dialogs
+    options.set_preference("dom.disable_beforeunload", False)
+    # options = webdriver.ChromeOptions()
+    return webdriver.Remote(command_executor='http://localhost:4444', options=options)
+
 @pytest.fixture
-def browser(browser_vendor):
+def browser(browser_vendor, run_firefox_in_docker_if_using_remote):
     browsers = dict(
         firefox=firefox,
         chrome=chrome,
         safari=safari,
+        remote=remote,
     )
     browser = browsers[browser_vendor]()
     browser.implicitly_wait(WAIT)
-    yield browser
-    browser.quit()
+    try:
+        yield browser
+    finally:
+        browser.quit()
 
 browser2 = browser
 

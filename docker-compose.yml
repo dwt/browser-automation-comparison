@@ -1,0 +1,19 @@
+x-defaults: &defaults
+  shm_size: 2g
+  ports:
+    # really need individual ports for all of them or they cannot run in parallalel
+    # also I probably wan tthe grid version to run the tests on all browsers in parallel
+    - "5900:5900" # VNC: open 'vnc://:secret@localhost:5900/'
+    - "4444:4444" # Selenium Grid (http)
+    - "7900:7900" # web vnc: open http://localhost:7900 password: secret
+  environment:
+    - SE_NODE_MAX_SESSIONS=2 # required for multi browser tests
+
+services:
+  firefox:
+    <<: *defaults
+    image: selenium/standalone-firefox:latest
+  chromium:
+    <<: *defaults
+    image: selenium/standalone-chrome:latest
+  

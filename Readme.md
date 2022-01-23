@@ -70,10 +70,17 @@ Current means late 2021, thats when I last looked intensively at this.
 1. How do frameworks deal with hidden elements?
     - display:none, visibility:hidden, moved out of frame, behind other elements, scrolled out of the viewport
 
+1. How different is the API for different browsers?
+
+1. How to Docker?
+    - How difficult is it to execute tests in Docker / CI/CD Environments
+    - Can tests be observed? Headfull-Execution, Screencasts, Screenshots, VNC?
+
 ## Comparison criteria
 
-- How different is the API to deal with different browsers?
 - how easy to run in docker container? (how to observe? GUI likely not possible, just screenshots, screencasts?)
+    - https://github.com/SeleniumHQ/docker-selenium
+    - https://hub.docker.com/_/microsoft-playwright
 - test mobile / touch interfaes
 - How to send return to textfields to trigger form submit handlers
 - Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input

@@ -67,6 +67,30 @@ def init_safari(app):
         clear_session_storage=True
     )
 
+@capybara.register_driver('selenium-remote')
+def init_remote_firefox(app):
+    """
+    - capybara quits the browsers it started in an atexit function.
+      Since the autouse fixture is guaranteed to have it's teardown called before that
+      Capybara raises an exception on shutdown. No clue how to work around that here.
+    - In a real system that shouldn't be a problem, as you can set up a wrapper script which starts the docker containers
+      and then starts capybara afterwards.
+    - Other than that, this works quite well
+    """
+    
+    # also see the autouse fixuture `run_firefox_in_docker_if_using_remote()` which starts docker in the background
+    options = webdriver.FirefoxOptions()
+    # required or marionette will not allow beforeunload dialogs
+    options.set_preference("dom.disable_beforeunload", False)
+    # options = webdriver.ChromeOptions()
+    
+    return Driver(app, browser='remote',
+        clear_local_storage=True,
+        clear_session_storage=True,
+        options=options,
+    )
+
+
 capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
@@ -248,7 +272,7 @@ def test_isolation(ask_to_leave_script, browser_vendor):
     
     # bug in capybara: background windows don't even have code to handle dialogs like onbeforeunload
     # see https://github.com/elliterate/capybara.py/issues/26
-    if 'firefox' != browser_vendor:
+    if browser_vendor not in ('firefox', 'remote'):
         with page.window(page.open_new_window()):
             page.visit('/')
             page.execute_script(ask_to_leave_script)

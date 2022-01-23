@@ -59,6 +59,7 @@ def remote():
     - Surprisingly fast browser restarts
     """
     
+    # also see the autouse fixuture `run_firefox_in_docker_if_using_remote()` which starts docker in the background
     options = webdriver.FirefoxOptions()
     # required or marionette will not allow beforeunload dialogs
     options.set_preference("dom.disable_beforeunload", False)

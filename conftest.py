@@ -144,7 +144,7 @@ def skip_or_xfail_safari(request, browser_vendor):
         return pytest.skip(msg=reason('skipif_safari'))
 
 
-@pytest.fixture
+@pytest.fixture(scope='session', autouse=True)
 def run_firefox_in_docker_if_using_remote(browser_vendor):
     if 'remote' != browser_vendor:
         return

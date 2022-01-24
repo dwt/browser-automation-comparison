@@ -67,7 +67,7 @@ def remote():
     return webdriver.Remote(command_executor='http://localhost:4444', options=options)
 
 @pytest.fixture
-def browser(browser_vendor, run_firefox_in_docker_if_using_remote):
+def browser(browser_vendor):
     browsers = dict(
         firefox=firefox,
         chrome=chrome,

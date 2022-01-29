@@ -15,14 +15,11 @@ from conftest import find_application, assert_is_png, add_auth_to_uri
 
 import pytest
 
-HEADLESS = True
-HEADLESS = False
-
 WAIT = 2
 
-def firefox():
+def firefox(is_headless):
     options = webdriver.FirefoxOptions()
-    options.headless = HEADLESS
+    options.headless = is_headless
     # required or marionette will not allow beforeunload dialogs
     options.set_preference("dom.disable_beforeunload", False)
     # required to allow username and password in url for basic auth
@@ -33,14 +30,14 @@ def firefox():
     
     return webdriver.Firefox(options=options)
 
-def chrome():
+def chrome(is_headless):
     options = webdriver.ChromeOptions()
     options.binary_location = find_application('Google Chrome')
-    options.headless = HEADLESS
+    options.headless = is_headless
     
     return webdriver.Chrome(options=options)
     
-def safari():
+def safari(is_headless):
     """
     - no headless support
     - strange differences
@@ -49,7 +46,7 @@ def safari():
     """
     return webdriver.Safari()
 
-def remote():
+def remote(is_headless):
     """
     - Run tests in ff,chrome,edge in docker
     - observe with vnc or browser based vnc
@@ -67,14 +64,14 @@ def remote():
     return webdriver.Remote(command_executor='http://localhost:4444', options=options)
 
 @pytest.fixture
-def browser(browser_vendor, run_selenium_firefox_in_docker_if_using_remote):
+def browser(browser_vendor, run_selenium_firefox_in_docker_if_using_remote, is_headless):
     browsers = dict(
         firefox=firefox,
         chrome=chrome,
         safari=safari,
         remote=remote,
     )
-    browser = browsers[browser_vendor]()
+    browser = browsers[browser_vendor](is_headless)
     browser.implicitly_wait(WAIT)
     try:
         yield browser

@@ -114,6 +114,7 @@ def assert_no_slower_than(seconds=1):
 
 def pytest_addoption(parser):
     parser.addoption("--browser", default='all', choices=('all', 'firefox', 'chrome', 'safari', 'remote'), help="default: all")
+    parser.addoption("--headless", default=False, action='store_true', help='default: false')
 
 def pytest_generate_tests(metafunc):
     if "browser_vendor" in metafunc.fixturenames:
@@ -121,6 +122,10 @@ def pytest_generate_tests(metafunc):
         if ['all'] == browser_vendor:
             browser_vendor = ['firefox', 'chrome', 'safari']
         metafunc.parametrize("browser_vendor", browser_vendor, scope='session')
+
+@pytest.fixture(scope='session')
+def is_headless(request):
+    return request.config.getoption('headless')
 
 # xfail or skipif don't have access to fixture arguments
 # also skipif is evaluated before the fixture, which means the side effect of the fixture cannot be used

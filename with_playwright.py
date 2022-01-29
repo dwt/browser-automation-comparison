@@ -14,13 +14,10 @@ import pytest
 
 from conftest import assert_is_png, assert_is_file, assert_no_slower_than, add_auth_to_uri
 
-HEADLESS = True
-HEADLESS = False
-
 WAIT = 5000
 
 @pytest.fixture(scope='session')
-def browser(browser_vendor, run_selenium_chrome_in_docker_if_using_remote):
+def browser(browser_vendor, run_selenium_chrome_in_docker_if_using_remote, is_headless):
     if 'remote' == browser_vendor:
         """
         - Using Selenium Grid to execute the tests in containers is quite easy
@@ -32,7 +29,7 @@ def browser(browser_vendor, run_selenium_chrome_in_docker_if_using_remote):
     with sync_playwright() as sync_api:
         browser_name_mapping = dict(chrome='chromium', firefox='firefox', safari='webkit')
         browser = getattr(sync_api, browser_name_mapping[browser_vendor])
-        instance = browser.launch(headless=HEADLESS)
+        instance = browser.launch(headless=is_headless)
         yield instance
         instance.close()
 

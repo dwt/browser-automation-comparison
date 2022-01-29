@@ -1,7 +1,7 @@
 # https://github.com/elliterate/capybara.py
 # https://elliterate.github.io/capybara.py/
 
-import re
+import re, sys
 
 import capybara
 from capybara.dsl import page
@@ -13,14 +13,11 @@ from selenium.webdriver.common.alert import Alert
 from conftest import assert_is_png, assert_no_slower_than, find_application, add_auth_to_uri
 import pytest
 
-HEADLESS = True
-HEADLESS = False
-
 @capybara.register_driver("selenium-firefox")
 def init_firefox(app):
     options = webdriver.FirefoxOptions()
     options.binary_location = find_application('Firefox')
-    options.headless = HEADLESS
+    options.headless = '--headless' in sys.argv
     # otherwise marionette automatically disables beforeunload event handling
     # still requires interaction to trigger
     options.set_preference("dom.disable_beforeunload", False)
@@ -40,7 +37,7 @@ def init_chrome(app):
     """
     options = webdriver.ChromeOptions()
     options.binary_location = find_application('Google Chrome')
-    options.headless = HEADLESS
+    options.headless = '--headless' in sys.argv
     
     return Driver(app, browser="chrome", options=options,
         # cannot set these after the fact, so we set them here

@@ -145,7 +145,7 @@ def skip_or_xfail_safari(request, browser_vendor):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def run_firefox_in_docker_if_using_remote(browser_vendor):
+def run_selenium_firefox_in_docker_if_using_remote(browser_vendor):
     if 'remote' != browser_vendor:
         return
     
@@ -163,12 +163,12 @@ def run_firefox_in_docker_if_using_remote(browser_vendor):
         while not selenium_grid_is_up():
             time.sleep(.2)
     
-    subprocess.run(['docker', 'compose', 'up', '-d', 'firefox'])
+    subprocess.run(['docker', 'compose', 'up', '-d', 'selenium-firefox'])
     wait_for_selenium_grid()
     try:
         yield
     finally:
         # stopping `docker compose` gracefully via signals doesn't seem to work at all
         # especially SIGTERM should have worked, as that is what gets sent on ctrl-c
-        subprocess.run(['docker', 'compose', 'stop', 'firefox'])
+        subprocess.run(['docker', 'compose', 'stop', 'selenium-firefox'])
 

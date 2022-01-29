@@ -1,4 +1,4 @@
-x-defaults: &defaults
+x-selenium-defaults: &selenium-defaults
   shm_size: 2g
   ports:
     # really need individual ports for all of them or they cannot run in parallalel
@@ -10,10 +10,10 @@ x-defaults: &defaults
     - SE_NODE_MAX_SESSIONS=2 # required for multi browser tests
 
 services:
-  firefox:
-    <<: *defaults
+  selenium-firefox:
+    <<: *selenium-defaults
     image: selenium/standalone-firefox:latest
-  chromium:
-    <<: *defaults
+  selenium-chromium:
+    <<: *selenium-defaults
     image: selenium/standalone-chrome:latest
   

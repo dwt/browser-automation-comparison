@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/playwright:focal
+
+RUN apt install python3-pip/now
+RUN pip install virtualenv
+
+RUN virtualenv venv
+
+COPY requirements.txt /tests/requirements.txt
+WORKDIR /tests
+RUN /venv/bin/pip install -r requirements.txt
+
+# if playwright asks to install browsers, it means the image version doesn't match the locally installed playwright
+# -> Update playwright in requirements.txt instead
+# RUN /venv/bin/playwright install
+
+COPY . /tests/

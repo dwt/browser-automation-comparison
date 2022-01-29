@@ -144,8 +144,7 @@ def skip_or_xfail_safari(request, browser_vendor):
         return pytest.skip(msg=reason('skipif_safari'))
 
 
-@pytest.fixture(scope='session', autouse=True)
-def run_selenium_firefox_in_docker_if_using_remote(browser_vendor):
+def run_selenium_in_docker_if_using_remote(browser_vendor, docker_compose_target):
     if 'remote' != browser_vendor:
         return
     
@@ -163,12 +162,20 @@ def run_selenium_firefox_in_docker_if_using_remote(browser_vendor):
         while not selenium_grid_is_up():
             time.sleep(.2)
     
-    subprocess.run(['docker', 'compose', 'up', '-d', 'selenium-firefox'])
+    subprocess.run(['docker', 'compose', 'up', '-d', docker_compose_target])
     wait_for_selenium_grid()
     try:
         yield
     finally:
         # stopping `docker compose` gracefully via signals doesn't seem to work at all
         # especially SIGTERM should have worked, as that is what gets sent on ctrl-c
-        subprocess.run(['docker', 'compose', 'stop', 'selenium-firefox'])
+        subprocess.run(['docker', 'compose', 'stop', docker_compose_target])
 
+# FIXME need to get this off of autouse, so the tests can control which browser ot use
+@pytest.fixture(scope='session')
+def run_selenium_firefox_in_docker_if_using_remote(browser_vendor):
+    yield from run_selenium_in_docker_if_using_remote(browser_vendor, 'selenium-firefox')
+
+@pytest.fixture(scope='session')
+def run_selenium_chrome_in_docker_if_using_remote(browser_vendor):
+    yield from run_selenium_in_docker_if_using_remote(browser_vendor, 'selenium-chrome')

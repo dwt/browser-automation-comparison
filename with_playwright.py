@@ -20,7 +20,15 @@ HEADLESS = False
 WAIT = 5000
 
 @pytest.fixture(scope='session')
-def browser(browser_vendor):
+def browser(browser_vendor, run_selenium_chrome_in_docker_if_using_remote):
+    if 'remote' == browser_vendor:
+        """
+        - Using Selenium Grid to execute the tests in containers is quite easy
+        - But it only supports Chromium
+        """
+        import os
+        os.environ['SELENIUM_REMOTE_URL'] = 'http://localhost:4444/wd/hub'
+        browser_vendor = 'chrome'
     with sync_playwright() as sync_api:
         browser_name_mapping = dict(chrome='chromium', firefox='firefox', safari='webkit')
         browser = getattr(sync_api, browser_name_mapping[browser_vendor])

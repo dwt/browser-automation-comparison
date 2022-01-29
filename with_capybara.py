@@ -95,7 +95,7 @@ capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
 @pytest.fixture(scope='function', autouse=True)
-def configure_driver(browser_vendor):
+def configure_driver(browser_vendor, run_selenium_firefox_in_docker_if_using_remote):
     with capybara.using_driver(f"selenium-{browser_vendor}"):
         yield
 

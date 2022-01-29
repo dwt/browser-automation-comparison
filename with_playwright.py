@@ -265,7 +265,7 @@ def test_isolation(page, flask_uri, ask_to_leave_script, browser_vendor):
     # quite fast!
     with assert_no_slower_than(1):
         browser = page.context.browser
-        browser.close()
+        page.context.close()
         context = browser.new_context()
         page = context.new_page()
     

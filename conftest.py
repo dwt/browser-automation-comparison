@@ -146,6 +146,7 @@ def skip_or_xfail_safari(request, browser_vendor):
 
 def run_selenium_in_docker_if_using_remote(browser_vendor, docker_compose_target):
     if 'remote' != browser_vendor:
+        yield
         return
     
     import subprocess

@@ -1,6 +1,6 @@
 # browser automation
 capybara-py==0.1.6
-playwright==1.17.2
+playwright==1.18.1
 selenium==3.141.0
 webdriver-manager==3.5.0
 # quite old and not compatible with current selenium. Only for legacy comparison

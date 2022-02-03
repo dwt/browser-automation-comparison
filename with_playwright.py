@@ -193,7 +193,9 @@ def test_debugging_support(page, flask_uri, tmp_path):
     assert_is_file(video_path, '.webm', b'.webm: WebM')
     
     # har
-    assert_is_file(har_path, '.har', b'/recorded.har: JSON data')
+    # inside the docker container the `file` utility is so old that it doesn't recognize json data
+    # and instead returns '/recorded.har: ASCII text'.
+    assert_is_file(har_path, '.har', b'/recorded.har: (JSON data|ASCII text)')
     
     # trace
     assert_is_file(trace_path, '.zip', b'/trace.zip: Zip archive data')

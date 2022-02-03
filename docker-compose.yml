@@ -17,6 +17,15 @@ services:
     <<: *selenium-defaults
     image: selenium/standalone-chrome:latest
   
-  # playwright:
-  #   image: mcr.microsoft.com/playwright:latest
-  #   ipc: host
+  playwright:
+    # image: mcr.microsoft.com/playwright:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    image: playwright:local
+    ipc: host
+    volumes:
+      - .:/tests/
+    environment: []
+      # - PATH=/venv/bin
+    command: /venv/bin/pytest with_playwright.py --browser firefox --headless

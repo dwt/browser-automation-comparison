@@ -99,7 +99,7 @@ def assert_is_file(path, expected_suffix, *expected_file_outputs):
     import subprocess
     output = subprocess.check_output(['file', path])
     for expected_output in expected_file_outputs:
-        assert expected_output in output
+        assert re.search(expected_output, output)
 
 from contextlib import contextmanager
 from datetime import datetime

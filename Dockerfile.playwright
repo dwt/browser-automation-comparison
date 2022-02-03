@@ -4,6 +4,7 @@ RUN apt install python3-pip/now
 RUN pip install virtualenv
 
 RUN virtualenv venv
+ENV PATH /venv/bin:$PATH
 
 COPY requirements.txt /tests/requirements.txt
 WORKDIR /tests

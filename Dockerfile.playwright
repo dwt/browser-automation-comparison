@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/playwright:focal
 
+RUN npm install --global playwright
+ENV NODE_PATH=/usr/lib/node_modules
+
 RUN apt install python3-pip/now
 RUN pip install virtualenv
 

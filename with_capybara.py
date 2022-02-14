@@ -68,7 +68,7 @@ def init_safari(app):
         clear_session_storage=True
     )
 
-@capybara.register_driver('selenium-remote')
+@capybara.register_driver('selenium-remote-selenium')
 def init_remote_firefox(app):
     """
     - capybara quits the browsers it started in an atexit function.
@@ -76,7 +76,7 @@ def init_remote_firefox(app):
       Capybara raises an exception on shutdown. No clue how to work around that here.
     - In a real system that shouldn't be a problem, as you can set up a wrapper script which starts the docker containers
       and then starts capybara afterwards.
-    - Other than that, this works quite well
+    - Other than that, this works quite well (same tradeoffs as pure selenium)
     """
     
     # also see the autouse fixuture `run_firefox_in_docker_if_using_remote()` which starts docker in the background
@@ -96,7 +96,7 @@ capybara.default_driver = "selenium-firefox"
 capybara.default_max_wait_time = 5
 
 @pytest.fixture(scope='function', autouse=True)
-def configure_driver(browser_vendor, run_selenium_firefox_in_docker_if_using_remote):
+def configure_driver(browser_vendor, run_selenium_firefox_in_docker_if_neccessary):
     with capybara.using_driver(f"selenium-{browser_vendor}"):
         yield
 

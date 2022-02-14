@@ -38,13 +38,12 @@ def flask_uri(browser_vendor):
                 
         flask_url = match.group(1)
         
+        @atexit.register
         def kill():
             process.terminate()
             process.wait()
         
-        atexit.register(kill)
-        
-        if 'remote' != browser_vendor:
+        if 'remote-' not in browser_vendor:
             yield flask_url
         else:
             protocol, host, port = flask_url.split(':')
@@ -113,7 +112,9 @@ def assert_no_slower_than(seconds=1):
 ## pytest customization to add multi browser support
 
 def pytest_addoption(parser):
-    parser.addoption("--browser", default='all', choices=('all', 'firefox', 'chrome', 'safari', 'remote'), help="default: all")
+    parser.addoption("--browser", default='all', help="default: all (local browsers)", choices=(
+        'all', 'firefox', 'chrome', 'safari', 'remote-selenium', 'remote-playwright'
+    ))
     parser.addoption("--headless", default=False, action='store_true', help='default: false')
 
 def pytest_generate_tests(metafunc):
@@ -149,8 +150,8 @@ def skip_or_xfail_safari(request, browser_vendor):
         return pytest.skip(msg=reason('skipif_safari'))
 
 
-def run_selenium_in_docker_if_using_remote(browser_vendor, docker_compose_target):
-    if 'remote' != browser_vendor:
+def run_selenium_in_docker_if_neccessary(browser_vendor, docker_compose_target):
+    if 'remote-selenium' != browser_vendor:
         yield
         return
     
@@ -177,11 +178,46 @@ def run_selenium_in_docker_if_using_remote(browser_vendor, docker_compose_target
         # especially SIGTERM should have worked, as that is what gets sent on ctrl-c
         subprocess.run(['docker', 'compose', 'stop', docker_compose_target])
 
-# FIXME need to get this off of autouse, so the tests can control which browser ot use
 @pytest.fixture(scope='session')
-def run_selenium_firefox_in_docker_if_using_remote(browser_vendor):
-    yield from run_selenium_in_docker_if_using_remote(browser_vendor, 'selenium-firefox')
+def run_selenium_firefox_in_docker_if_neccessary(browser_vendor):
+    yield from run_selenium_in_docker_if_neccessary(browser_vendor, 'selenium-firefox')
 
 @pytest.fixture(scope='session')
-def run_selenium_chrome_in_docker_if_using_remote(browser_vendor):
-    yield from run_selenium_in_docker_if_using_remote(browser_vendor, 'selenium-chrome')
+def run_selenium_chrome_in_docker_if_neccessary(browser_vendor):
+    yield from run_selenium_in_docker_if_neccessary(browser_vendor, 'selenium-chrome')
+
+@pytest.fixture(scope='session')
+def run_playwright_chrome_in_docker_if_neccessary(browser_vendor):
+    if 'remote-playwright' != browser_vendor:
+        yield
+        return
+    
+    with subprocess.Popen(
+        ['docker', 'compose', 'run', '--service-ports', 'playwright-remote'], 
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf8'
+    ) as process:
+        @atexit.register
+        def kill():
+            process.terminate()
+            process.wait()
+
+        playwright_url = None
+        still_starting = True
+        while still_starting:
+            output = process.stdout.readline()
+            print(f'{output=}')
+            # example ws://127.0.0.1:2342/143c3727b691bceeb8bbeb349715452c
+            match = re.match(r'^.*(ws://[\d\.\:]+/\w+).*$', output)
+            still_starting = match is None
+    
+    playwright_url = match.group(1)
+    print(f'{playwright_url=}')
+    
+    try:
+        from collections import namedtuple
+        CDP = namedtuple('ChromeDevToolProtocol', ['url'])
+        yield CDP(url=playwright_url)
+    finally:
+        subprocess.run(['docker', 'compose', 'stop', 'playwright-remote'])
+        kill()
+        

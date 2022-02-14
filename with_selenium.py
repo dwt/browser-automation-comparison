@@ -64,13 +64,13 @@ def remote(is_headless):
     return webdriver.Remote(command_executor='http://localhost:4444', options=options)
 
 @pytest.fixture
-def browser(browser_vendor, run_selenium_firefox_in_docker_if_using_remote, is_headless):
-    browsers = dict(
-        firefox=firefox,
-        chrome=chrome,
-        safari=safari,
-        remote=remote,
-    )
+def browser(browser_vendor, run_selenium_firefox_in_docker_if_neccessary, is_headless):
+    browsers = {
+        'firefox': firefox,
+        'chrome': chrome,
+        'safari': safari,
+        'remote-selenium': remote,
+    }
     browser = browsers[browser_vendor](is_headless)
     browser.implicitly_wait(WAIT)
     try:
@@ -106,10 +106,10 @@ def test_google(browser):
     # Need explicit wait, or the next assertion fires before the page has finished loading
     until(browser, EC.presence_of_element_located((By.CLASS_NAME, 'g')))
     
-    assert len(browser.find_elements(By.CSS_SELECTOR, '.g')) >= 10
+    assert len(browser.find_elements(By.CSS_SELECTOR, '.g')) >= 9
     
-    first = browser.find_element(By.CSS_SELECTOR, '.g') # first, note missing 's'
-    assert 'Selenium automates browsers' in first.text
+    elements = browser.find_elements(By.CSS_SELECTOR, '.g')
+    assert any(map(lambda each: 'Selenium automates browsers' in each.text, elements))
 
 class NestedSearch(object):
     

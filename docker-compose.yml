@@ -8,8 +8,26 @@ x-selenium-defaults: &selenium-defaults
     - "7900:7900" # web vnc: open http://localhost:7900 password: secret
   environment:
     - SE_NODE_MAX_SESSIONS=2 # required for multi browser tests
+    # playwright needs this, else the Chrome DevTools Protocol urls point to an internal
+    # docker ip which is not resolvable from outside
+    - SE_NODE_GRID_URL=http://127.0.0.1:4444
+
+x-playwright-defaults: &playwright-defaults
+  build:
+    context: .
+    dockerfile: Dockerfile.playwright
+  image: playwright:local
+  ipc: host
+  volumes:
+    - .:/tests/
 
 services:
+  # Start with `docker compose run playwright-internal` to execute all tests inside this docker container
+  playwright-internal:
+    <<: *playwright-defaults
+    command: /venv/bin/pytest with_playwright.py --browser firefox --headless
+  
+  # all other containers are services which start just a browser for the tests to connect to over TCP
   selenium-firefox:
     <<: *selenium-defaults
     image: selenium/standalone-firefox:latest
@@ -17,15 +35,8 @@ services:
     <<: *selenium-defaults
     image: selenium/standalone-chrome:latest
   
-  playwright:
-    # image: mcr.microsoft.com/playwright:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.playwright
-    image: playwright:local
-    ipc: host
-    volumes:
-      - .:/tests/
-    environment: []
-      # - PATH=/venv/bin
-    command: /venv/bin/pytest with_playwright.py --browser firefox --headless
+  playwright-remote:
+    <<: *playwright-defaults
+    ports:
+      - "2342:2342"
+    command: node /tests/playwright-server.js 

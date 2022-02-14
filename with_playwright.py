@@ -17,8 +17,25 @@ from conftest import assert_is_png, assert_is_file, assert_no_slower_than, add_a
 WAIT = 5000
 
 @pytest.fixture(scope='session')
-def browser(browser_vendor, run_selenium_chrome_in_docker_if_using_remote, is_headless):
-    if 'remote' == browser_vendor:
+def browser(browser_vendor, is_headless, 
+    run_selenium_chrome_in_docker_if_neccessary,
+    run_playwright_chrome_in_docker_if_neccessary
+):
+    if 'remote-playwright' == browser_vendor:
+        """
+        - slightly difficult to start browser in container, as it requires a node script
+        - self built container, so vnc observability needs to be self built
+        - not sure if video recording works in container - if it does, that should be good enough
+        """
+        with sync_playwright() as sync_api:
+            instance = sync_api.chromium.connect(
+                ws_endpoint=run_playwright_chrome_in_docker_if_neccessary.url,
+            )
+            yield instance
+            instance.close()
+            return
+    
+    if 'remote-selenium' == browser_vendor:
         """
         - Using Selenium Grid to execute the tests in containers is quite easy
         - But it only supports Chromium

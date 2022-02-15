@@ -475,7 +475,7 @@ def test_invisible_and_hidden_elements(page):
 
 def test_shadow_dom(page, context, force_open_shadow_dom_script):
     """
-    - can easily pierce open shadow doms with css and text selector engine
+    - css and text selector engine pierce open shadow doms by default!
     - xpath doesn't pierce, so xpath abstraction libraries are not usefull. :-(
     - closed shadow dom cannot be pierced
     - but can be forced open

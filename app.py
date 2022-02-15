@@ -92,3 +92,37 @@ def hidden():
     </body>
     </html>
     '''
+
+@app.get('/shadow')
+def shadow():
+    return '''
+    <!doctype html>
+    <html>
+    <head>
+        <script>
+        customElements.define('labeled-input', 
+            class extends HTMLElement {
+                connectedCallback() {
+                    var shadow = this.attachShadow({mode: this.getAttribute('mode') || 'open' })
+                    shadow.innerHTML = `
+                        <div>
+                        <label>
+                            ${ this.getAttribute('label-text') }
+                            <input 
+                                type="${ this.getAttribute('type') }"
+                                name="${ this.getAttribute('name') }"
+                            >
+                        </label>
+                        </div>
+                    `
+                }
+            }
+        )
+        </script>
+    </head>
+    <body>
+        <labeled-input name=first type=text label-text="First Name"></labeled-input>
+        <labeled-input name=last type=text label-text="Last Name" mode=closed></labeled-input>
+    </body>
+    </html>
+    '''

@@ -472,3 +472,27 @@ def test_invisible_and_hidden_elements(page):
         # will auto scroll into view
         find('.below_scroll').click()
         assert is_in_viewport(page, find('.below_scroll'))
+
+def test_shadow_dom(page, context, force_open_shadow_dom_script):
+    """
+    - can easily pierce open shadow doms with css and text selector engine
+    - xpath doesn't pierce, so xpath abstraction libraries are not usefull. :-(
+    - closed shadow dom cannot be pierced
+    - but can be forced open
+    """
+    page.goto('/shadow')
+    page.fill('text=First Name', 'First')
+    assert page.input_value('text=First Name') == 'First'
+    # xpath doesn't pierce
+    with using_wait_time(page, 1), pytest.raises(PlaywrightTimeoutError):
+        page.fill('xpath=//input[name="first"]', 'Second')
+    # cannot pierce closed shadow dom
+    with using_wait_time(page, 1), pytest.raises(PlaywrightTimeoutError):
+        page.fill('text=Last Name', 'Last')
+    
+    # can force open closed shadow doms
+    context.add_init_script(force_open_shadow_dom_script)
+    page = context.new_page()
+    page.goto('/shadow')
+    page.fill('text=Last Name', 'Last')
+    assert page.input_value('text=Last Name') == 'Last'

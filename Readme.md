@@ -76,6 +76,11 @@ Current means late 2021, thats when I last looked intensively at this.
     - How difficult is it to execute tests in Docker / CI/CD Environments
     - Can tests be observed? Headfull-Execution, Screencasts, Screenshots, VNC?
 
+1. Shadow Dom
+    - Can the shadow dom be pierced? CSS, XPath?
+    - What about closed shadow doms?
+    - Can closed shadow doms be opened?
+
 ## Comparison criteria
 
 - how do the tools deal with shadow dom

@@ -69,6 +69,16 @@ def ask_to_leave_script():
         });
     '''
 
+@pytest.fixture
+def force_open_shadow_dom_script():
+    return '''
+    var original = Element.prototype.attachShadow
+    Element.prototype.attachShadow = function(config) {
+        config.mode = 'open'
+        return original.apply(this, arguments)
+    }
+    '''
+
 ## Test helpers and assertions
 
 # Selenium style xpath matcher

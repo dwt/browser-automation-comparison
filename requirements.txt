@@ -1,15 +1,15 @@
 # browser automation
 capybara-py==0.1.6
-playwright==1.18.1
-selenium==3.141.0
-webdriver-manager==3.5.0
+playwright==1.22.0
+selenium==4.1.5
+webdriver-manager==3.7.0
 # quite old and not compatible with current selenium. Only for legacy comparison
 # selene==2.0.0a40
 # splinter==0.16.0
 
 # Server
-Flask==2.0.2
+Flask==2.0.3
 
 # Development helpers
-pytest==6.2.5
-objexplore==1.5.7
+pytest==7.0.1
+objexplore==1.6.3

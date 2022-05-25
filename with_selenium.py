@@ -8,8 +8,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException, ElementNotInteractableException, NoSuchElementException,
+    NoSuchShadowRootException
+)
 from selenium.webdriver.common.alert import Alert
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 
 from conftest import find_application, assert_is_png, add_auth_to_uri
 
@@ -28,14 +35,18 @@ def firefox(is_headless):
     # options.set_preference('network.http.phishy-userpass-length', 255)
     options.binary_location = find_application('Firefox')
     
-    return webdriver.Firefox(options=options)
+    service = FirefoxService(GeckoDriverManager().install())
+    
+    return webdriver.Firefox(options=options, service=service)
 
 def chrome(is_headless):
     options = webdriver.ChromeOptions()
     options.binary_location = find_application('Google Chrome')
     options.headless = is_headless
     
-    return webdriver.Chrome(options=options)
+    service = ChromeService(ChromeDriverManager().install())
+    
+    return webdriver.Chrome(options=options, service=service)
     
 def safari(is_headless):
     """

@@ -33,7 +33,7 @@ def flask_uri(browser_vendor):
         still_starting = True
         while still_starting:
             output = process.stderr.readline()
-            match = re.match(r'^.* Running on (http://[\d\.\:]+/).*$', output)
+            match = re.match(r'^.* Running on (http://[\d\.\:]+).*$', output)
             still_starting = match is None
                 
         flask_url = match.group(1)

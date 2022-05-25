@@ -109,9 +109,8 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## Further work
 
-- What would be interesting to see? Send pull requestss
+- What would be interesting to see? Send pull requests
 - Try out playwrigth record mode
-- selene supposedly can download it's own drivers, how does that work?
 - how does execution in containers work? How to debug failing tests?
 - What differentiates playwright from selenium? What features set it apart?
 - How to interact with the page via keyboard shortcuts

@@ -22,6 +22,9 @@ from conftest import find_application, assert_is_png, add_auth_to_uri
 
 import pytest
 
+from objexplore import explore as e
+from rich import inspect as i
+
 WAIT = 2
 
 def firefox(is_headless):

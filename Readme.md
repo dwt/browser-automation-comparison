@@ -92,7 +92,9 @@ Current means late 2021, thats when I last looked intensively at this.
 - how do the tools deal with shadow dom
     - Evaluate https://www.selenium.dev/documentation/webdriver/bidirectional/bidi_api/
       for closed web-components, basic auth, maybe more? debugging features?
+- rework playwrigth code to use locators more (more idiomatic)
 - Evaluate https://github.com/wkeeling/selenium-wire to inspect requests (maybe better to use CDP api?)
+- Evaluate https://npm.io/package/query-selector-shadow-dom
 - test mobile / touch interfaes
 - How to send return to textfields to trigger form submit handlers
 - Way to traverse (only?) accessibility information, i.e. use AC tests to ensure accessibility interfaces are thourough enough to reach every important input

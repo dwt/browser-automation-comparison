@@ -12,6 +12,8 @@ Current means late 2021, thats when I last looked intensively at this.
 
 ## How to execute the tests
 
+[Create a plain github token without any custom permissions](https://github.com/settings/tokens) and make make it available to python in the environment variable `GH_TOKEN`. This token is used to download current versions of web drivers for selenium. I use a `.env` file for this.
+
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt

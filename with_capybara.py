@@ -9,6 +9,10 @@ from capybara.selenium.driver import Driver
 from selenium import webdriver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.alert import Alert
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 
 from conftest import assert_is_png, assert_no_slower_than, find_application, add_auth_to_uri
 import pytest
@@ -26,7 +30,9 @@ def init_firefox(app):
     # still requires interaction to trigger
     options.set_preference("dom.disable_beforeunload", False)
     
-    return Driver(app, browser="firefox", options=options,
+    service = FirefoxService(GeckoDriverManager().install())
+    
+    return Driver(app, browser="firefox", options=options, service=service,
         # cannot set these after the fact, so we set them here
         clear_local_storage=True,
         clear_session_storage=True,
@@ -43,7 +49,9 @@ def init_chrome(app):
     options.binary_location = find_application('Google Chrome')
     options.headless = is_headless()
     
-    return Driver(app, browser="chrome", options=options,
+    service = ChromeService(ChromeDriverManager().install())
+    
+    return Driver(app, browser="chrome", options=options, service=service,
         # cannot set these after the fact, so we set them here
         clear_local_storage=True,
         clear_session_storage=True,

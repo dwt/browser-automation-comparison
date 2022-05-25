@@ -83,6 +83,10 @@ Current means late 2021, thats when I last looked intensively at this.
     - What about closed shadow doms?
     - Can closed shadow doms be opened?
 
+1. External dependencies
+    - Selenium based browser automation always requires downloading the matching webdrivers for each browser as an external dependency. webdriver_manager automates this.
+    - Playwright can download browser stubs for each of it's supported browsers that behave very similar. E.g. the Safari-Stub is completely separated from the user profile (cache, cookies, secrets). However, it's not automatic and needs to be triggered once.
+
 ## Comparison criteria
 
 - how do the tools deal with shadow dom

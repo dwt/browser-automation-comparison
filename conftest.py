@@ -159,6 +159,21 @@ def skip_or_xfail_safari(request, browser_vendor):
     if request.node.get_closest_marker('skipif_safari'):
         return pytest.skip(msg=reason('skipif_safari'))
 
+@pytest.fixture(autouse=True)
+def skip_or_xfail_firefox(request, browser_vendor):
+    if 'firefox' != browser_vendor:
+        return
+    
+    def reason(marker_name):
+        return request.node.get_closest_marker(marker_name).kwargs['reason']
+    
+    if request.node.get_closest_marker('xfail_firefox'):
+        # add a normal xfail marker, to allow the test to execute
+        request.node.add_marker(pytest.mark.xfail(reason=reason('xfail_firefox')))
+        
+    if request.node.get_closest_marker('skipif_firefox'):
+        return pytest.skip(msg=reason('skipif_firefox'))
+
 
 def run_selenium_in_docker_if_neccessary(browser_vendor, docker_compose_target):
     if 'remote-selenium' != browser_vendor:

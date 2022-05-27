@@ -356,6 +356,9 @@ def test_basic_auth(browser, flask_uri):
     
     text = browser.find_element(By.XPATH, '//body').text
     assert text == 'Authenticated'
+    
+    # TODO evaluate https://www.selenium.dev/documentation/webdriver/bidirectional/bidi_api/
+    # for auth basic support
 
 def is_in_viewport(browser, element):
     viewport_height = browser.execute_script('return window.innerHeight')
@@ -436,3 +439,40 @@ def test_invisible_and_hidden_elements(flask_uri, browser):
         # will auto scroll into view
         find('.below_scroll').click()
         assert is_in_viewport(browser, find('.below_scroll'))
+
+# TODO only works in chrome (todo check safari)
+def test_shadow_dom(flask_uri, browser, force_open_shadow_dom_script):
+    """
+    - no way to pierce through shadow dom implicitly
+    - need to explicitly select every web component on the way to pierce manually through it
+    """
+    browser.get(flask_uri + '/shadow')
+    
+    # can pierce manually with css selectors
+    web_component = browser.find_element(By.CSS_SELECTOR, 'labeled-input[name="first"]').shadow_root
+    input = web_component.find_element(By.CSS_SELECTOR, 'input')
+    input.send_keys('First')
+    assert 'First' == input.get_property('value')
+    
+    # xpath doesn't pierce
+    with using_wait_time(browser, 1), pytest.raises(NoSuchElementException):
+        browser.find_element(By.CSS_SELECTOR, 'input[name="first"]')
+    
+    # cannot pierce closed shadow dom by default
+    with using_wait_time(browser, 1), pytest.raises(NoSuchShadowRootException):
+        browser.find_element(By.CSS_SELECTOR, 'labeled-input[name="last"]').shadow_root
+
+@pytest.mark.xfail_firefox(reason='execute_cdp_cmd only supported on chromium')
+@pytest.mark.xfail_safari(reason='execute_cdp_cmd only supported on chromium')
+def test_force_open_shadow_dom(flask_uri, browser, force_open_shadow_dom_script):
+    
+    browser.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': force_open_shadow_dom_script})
+    browser.get(flask_uri + '/shadow')
+    
+    # now we can pierce
+    web_component = browser.find_element(By.CSS_SELECTOR, 'labeled-input[name="last"]').shadow_root
+    
+    input = web_component.find_element(By.CSS_SELECTOR, 'input')
+    input.send_keys('First')
+    assert 'First' == input.get_property('value')
+    
